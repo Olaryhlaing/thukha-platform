@@ -267,6 +267,9 @@ function CreatePageInner() {
     referenceCount: referenceImages.length,
   });
   const effectiveTokens = serverTokens ?? tokens;
+  // Guest = no Supabase session. Guests may generate and preview,
+  // but they must NOT download a clean image (see below).
+  const isGuest = !authToken;
 
   // Load the image provider once, so /create can warn about the
   // Cloudflare reference-image limit before the user generates.
@@ -429,6 +432,10 @@ function CreatePageInner() {
   // browser's own text engine, so it cannot garble like AI text.
   function downloadWithText() {
     if (!selected) return;
+    if (isGuest) {
+      setOverlayMessage("Guest အနေနဲ့ Download လုပ်လို့ မရပါ — Login / Signup လုပ်ပြီးမှ Download ရမယ်။");
+      return;
+    }
     if (!overlayHeadline.trim() && !overlaySub.trim()) {
       setOverlayMessage("စာထည့်ဖို့ အရင် ခေါင်းစဉ် ဒါမှမဟုတ် စာကြောင်းတစ်ခု ရေးပါ။");
       return;
@@ -876,10 +883,17 @@ function CreatePageInner() {
           <b>ဒီ Preview က အလကားပါ — token မဖြတ်ဘူး။</b> ပုံမထုတ်ခင် စာကို
           ဒီမှာ အရင် စစ်ပြီး ပြင်ပါ၊ စာကျေနပ်မှ AI ပုံ ဖန်တီးပါ။
         </p>
-        <div ref={previewRef} className="relative mx-auto w-full max-w-[480px]">
+        {isGuest && (
+          <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
+            Guest အနေနဲ့ စမ်းသုံးလို့ရတယ် — <b>Download လုပ်လို့ မရဘူး</b>။
+            Screenshot ရိုက်ရင်လည်း watermark ပါမယ်။ Clean PNG ရဖို့{" "}
+            <a href="/login" className="font-bold text-thukha-violet">Login လုပ်ပါ</a>။
+          </p>
+        )}
+        <div ref={previewRef} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="relative mx-auto w-full max-w-[480px] select-none">
           {selected ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={selected} alt="AI ပုံ" className="w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
+            <img src={selected} alt="AI ပုံ" draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
           ) : (
             <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-thukha-violet to-thukha-lilac p-6 text-center font-bold text-white shadow-xl shadow-thukha-violet/30">
               {overlayHeadline.trim() || overlaySub.trim()
@@ -986,6 +1000,18 @@ function CreatePageInner() {
                   </>
                 );
               })()}
+          {selected && isGuest && (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+              <div className="absolute inset-x-0 top-0 bg-black/60 py-2 text-center text-xs font-bold text-white">
+                Guest Preview — Download လုပ်လို့ မရပါ · Login လုပ်ပါ
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="whitespace-nowrap text-2xl font-black text-white/70 sm:text-3xl" style={{ transform: "rotate(-25deg)", textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>
+                  ThuKha Preview
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         {!selected && (overlayHeadline.trim() || overlaySub.trim()) && (
           <p className="text-sm leading-6 text-thukha-indigo">
@@ -1028,13 +1054,27 @@ function CreatePageInner() {
                 ဆွဲထားတဲ့ နေရာ ပြန်ဖျက် (အပေါ်/အလယ်/အောက် ရွေးထားတာဆီ ပြန်သွား)
               </button>
             )}
-            <button type="button" onClick={downloadWithText} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
-              စာနဲ့ PNG Download
-            </button>
-            {overlayMessage && <p className="text-sm leading-6 text-thukha-indigo">{overlayMessage}</p>}
-            <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet">
-              စာမပါဘဲ PNG Download
-            </a>
+            {isGuest ? (
+              <>
+                <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
+                  Guest အနေနဲ့ Download လုပ်လို့ မရပါ — Login / Signup လုပ်ပြီးမှ
+                  စာနဲ့ PNG, စာမပါဘဲ PNG တို့ကို Download ရမယ်။
+                </p>
+                <a href="/login" className="flex min-h-[44px] items-center justify-center rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
+                  Login လုပ်ပြီး Download လုပ်ပါ
+                </a>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={downloadWithText} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
+                  စာနဲ့ PNG Download
+                </button>
+                {overlayMessage && <p className="text-sm leading-6 text-thukha-indigo">{overlayMessage}</p>}
+                <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet">
+                  စာမပါဘဲ PNG Download
+                </a>
+              </>
+            )}
             <button type="button" onClick={saveDesign} className="min-h-[44px] rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet">
               Design သိမ်းပါ
             </button>
