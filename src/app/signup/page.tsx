@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
+import PlatformAbout from "@/components/PlatformAbout";
 
 const inputClass =
   "w-full rounded-xl border border-thukha-lilac/50 bg-white px-3 py-3 text-base text-thukha-indigo outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
@@ -18,7 +19,9 @@ export default function SignupPage() {
 
   if (!supabaseConfigured()) {
     return (
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
+      <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+        <PlatformAbout />
+        <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold">Signup</h1>
         <p className="leading-7 text-thukha-indigo/70">
           Supabase မချိတ်သေးပါ — .env.local (ဒါမှမဟုတ် Vercel Env) မှာ
@@ -26,6 +29,7 @@ export default function SignupPage() {
           signup လုပ်လို့ရမယ်။
         </p>
         <Link href="/create" className="font-bold text-thukha-violet">/create ကို သွားပါ →</Link>
+        </div>
       </main>
     );
   }
@@ -45,7 +49,21 @@ export default function SignupPage() {
     });
     setLoading(false);
     if (err) {
-      setError("Signup မအောင်ပါ။ Email စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      // The old code hid every Supabase error behind one generic
+      // message, so a real cause (already-registered email, weak
+      // password, signups disabled) was impossible to tell apart.
+      const msg = (err.message ?? "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered")) {
+        setError("ဒီ email နဲ့ account ရှိနေပြီ။ Signup ထပ်လုပ်စရာ မလိုဘူး — Login လုပ်ပါ။");
+      } else if (msg.includes("password")) {
+        setError("Password အားနည်းနေတယ်။ အနည်းဆုံး ၆ လုံး၊ စာလုံး + ဂဏန်း ပါအောင် ရေးပေးပါ။");
+      } else if (msg.includes("sign up") || msg.includes("signup") || msg.includes("not allowed")) {
+        setError("Supabase မှာ signup ပိတ်ထားတယ်။ Authentication → Sign In / Providers မှာ Email နဲ့ Allow new users to sign up ကို စစ်ပါ။");
+      } else if (msg.includes("email")) {
+        setError("Email ပုံစံ မမှန်ပါ။ email အတိအကျ ရေးပြီး ထပ်ကြိုးစားပါ။");
+      } else {
+        setError("Signup မအောင်ပါ။ Email စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      }
       return;
     }
     if (!data.session) {
@@ -59,7 +77,9 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
+    <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+      <PlatformAbout />
+      <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-bold">Signup</h1>
       <p className="text-sm leading-6 text-thukha-indigo/70">
         Signup ပြီးရင် token 100 နဲ့ စမယ်။ Token က account နဲ့ ချိတ်ထားတယ်။
@@ -80,6 +100,7 @@ export default function SignupPage() {
       <p className="text-sm text-thukha-indigo/70">
         Account ရှိပြီးရင် <Link href="/login" className="font-bold text-thukha-violet">Login လုပ်ပါ</Link>
       </p>
+      </div>
     </main>
   );
 }

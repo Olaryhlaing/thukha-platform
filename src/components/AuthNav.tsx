@@ -4,13 +4,35 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 
-/* Header auth state. Guest (no Supabase env, or not logged in) sees
-   Login / Signup links; a logged-in customer sees their email and
-   a Logout button. Session lives in the browser via supabase-js. */
+/* Header auth state + role separation. Guest (no Supabase env, or
+   not logged in) sees Login / Signup links; a logged-in customer
+   sees their email and a Logout button; ONLY a logged-in admin sees
+   the Admin link (via /api/me, server-side role check). The old
+   layout showed Admin to everyone, including guests and customers,
+   which mixed the two sides in the UI even though /admin itself
+   already returned 403 for customers. Session lives in the browser
+   via supabase-js. */
 export default function AuthNav() {
   const [email, setEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   // No Supabase env => nothing to load, so start loaded.
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
+
+  async function refreshRole(token: string | undefined) {
+    if (!token) {
+      setIsAdmin(false);
+      return;
+    }
+    try {
+      const res = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { role?: string };
+      setIsAdmin(res.ok && json.role === "admin");
+    } catch {
+      setIsAdmin(false);
+    }
+  }
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -18,10 +40,12 @@ export default function AuthNav() {
     supabase.auth.getSession().then(({ data }) => {
       setEmail(data.session?.user.email ?? null);
       setLoaded(true);
+      void refreshRole(data.session?.access_token);
     });
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setEmail(session?.user.email ?? null);
+        void refreshRole(session?.access_token);
       },
     );
     return () => listener.subscription.unsubscribe();
@@ -49,6 +73,11 @@ export default function AuthNav() {
   }
   return (
     <>
+      {isAdmin && (
+        <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet">
+          Admin
+        </Link>
+      )}
       <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70">
         {email}
       </span>
@@ -57,6 +86,7 @@ export default function AuthNav() {
         onClick={async () => {
           await getSupabase()?.auth.signOut();
           setEmail(null);
+          setIsAdmin(false);
         }}
         className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet"
       >

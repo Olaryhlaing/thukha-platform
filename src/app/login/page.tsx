@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
+import PlatformAbout from "@/components/PlatformAbout";
 
 const inputClass =
   "w-full rounded-xl border border-thukha-lilac/50 bg-white px-3 py-3 text-base text-thukha-indigo outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
@@ -17,7 +18,9 @@ export default function LoginPage() {
 
   if (!supabaseConfigured()) {
     return (
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
+      <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+        <PlatformAbout />
+        <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold">Login</h1>
         <p className="leading-7 text-thukha-indigo/70">
           Supabase မချိတ်သေးပါ — .env.local (ဒါမှမဟုတ် Vercel Env) မှာ
@@ -25,6 +28,7 @@ export default function LoginPage() {
           login လုပ်လို့ရမယ်။ အခု guest အနေနဲ့ /create မှာ ဆက်သုံးလို့ရတယ်။
         </p>
         <Link href="/create" className="font-bold text-thukha-violet">/create ကို သွားပါ →</Link>
+        </div>
       </main>
     );
   }
@@ -43,7 +47,16 @@ export default function LoginPage() {
     });
     if (err || !data.session) {
       setLoading(false);
-      setError("Login မအောင်ပါ။ Email / password စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      const msg = (err?.message ?? "").toLowerCase();
+      if (msg.includes("not confirmed") || msg.includes("confirm")) {
+        setError("Email confirm လုပ်ပြီးမှ login ရမယ်။ inbox ထဲက confirm link ကို နှိပ်ပါ။");
+      } else if (msg.includes("too many") || msg.includes("rate")) {
+        setError("ကြိုးစားတာ များသွားပြီ။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။");
+      } else if (msg.includes("invalid")) {
+        setError("Email / password မှားနေတယ်။ သေချာ စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      } else {
+        setError("Login မအောင်ပါ။ Email / password စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      }
       return;
     }
     // Strict role separation (mirror of /admin/login): an admin
@@ -64,7 +77,9 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
+    <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+      <PlatformAbout />
+      <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-bold">Customer Login</h1>
       <p className="text-sm leading-6 text-thukha-indigo/70">
         Customer အနေနဲ့ login လုပ်ပါ။ Admin ဆိုရင်{" "}
@@ -86,6 +101,7 @@ export default function LoginPage() {
       <p className="text-sm text-thukha-indigo/70">
         Account မရှိသေးရင် <Link href="/signup" className="font-bold text-thukha-violet">Signup လုပ်ပါ</Link>
       </p>
+      </div>
     </main>
   );
 }

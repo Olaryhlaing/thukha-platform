@@ -85,10 +85,18 @@ export default function BrandsPage() {
     const supabase = getSupabase();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     if (token) {
-      await fetch(`/api/brands?id=${encodeURIComponent(id)}`, {
+      // Only remove locally when the server confirms the delete —
+      // the old code removed it even on a 404/403, so a refresh
+      // brought the brand back (a confusing false delete).
+      const res = await fetch(`/api/brands?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(json.error ?? "Brand ဖျက်လို့ မရပါ။");
+        return;
+      }
     } else {
       const next = readGuestBrands().filter((b) => b.id !== id);
       localStorage.setItem("thukha-brands", JSON.stringify(next));

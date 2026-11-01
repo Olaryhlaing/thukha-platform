@@ -62,6 +62,18 @@ export async function DELETE(request: Request) {
   }
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Design id မရှိပါ။" }, { status: 400 });
-  await service.from("designs").delete().eq("id", id).eq("owner_id", user.id);
+  // Return 404 when nothing was deleted (wrong id, or another
+  // customer's design) instead of a false ok — the old code always
+  // returned ok, even for a design that was never yours.
+  const { data, error } = await service
+    .from("designs")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .select("id");
+  if (error) return NextResponse.json({ error: "Design ဖျက်လို့ မရပါ။" }, { status: 502 });
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "ဒီ Design ကို မတွေ့ပါ။" }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }

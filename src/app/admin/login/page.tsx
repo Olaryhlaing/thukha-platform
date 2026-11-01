@@ -47,7 +47,14 @@ export default function AdminLoginPage() {
     });
     if (err || !data.session) {
       setLoading(false);
-      setError("Admin login မအောင်ပါ။ Email / password စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      const msg = (err?.message ?? "").toLowerCase();
+      if (msg.includes("not confirmed") || msg.includes("confirm")) {
+        setError("Email confirm လုပ်ပြီးမှ admin login ရမယ်။ inbox ထဲက confirm link ကို နှိပ်ပါ။");
+      } else if (msg.includes("invalid")) {
+        setError("Admin email / password မှားနေတယ်။ သေချာ စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      } else {
+        setError("Admin login မအောင်ပါ။ Email / password စစ်ပြီး ထပ်ကြိုးစားပါ။");
+      }
       return;
     }
     const res = await fetch("/api/me", {

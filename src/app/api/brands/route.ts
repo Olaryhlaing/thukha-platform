@@ -50,6 +50,18 @@ export async function DELETE(request: Request) {
   }
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Brand id မရှိပါ။" }, { status: 400 });
-  await service.from("brands").delete().eq("id", id).eq("owner_id", user.id);
+  // Return 404 when nothing was deleted (wrong id, or another
+  // customer's brand) instead of a false ok — the old code always
+  // returned ok, even for a brand that was never yours.
+  const { data, error } = await service
+    .from("brands")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .select("id");
+  if (error) return NextResponse.json({ error: "Brand ဖျက်လို့ မရပါ။" }, { status: 502 });
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "ဒီ Brand ကို မတွေ့ပါ။" }, { status: 404 });
+  }
   return NextResponse.json({ ok: true });
 }

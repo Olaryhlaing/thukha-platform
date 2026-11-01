@@ -34,22 +34,46 @@ export async function POST(request: Request) {
   if (!Number.isFinite(amount) || amount < 1 || amount > 10000) {
     return NextResponse.json({ error: "Amount က 1 ကနေ 10000 အတွင်း ဖြစ်ရမယ်။" }, { status: 400 });
   }
+  // Admins must not refill themselves — a refill is for customers
+  // only, otherwise an admin can enrich their own wallet for free.
+  if (userId === user.id) {
+    return NextResponse.json({ error: "ကိုယ့်ကိုယ်ကို token ဖြည့်လို့ မရပါ။ Customer တွေကိုပဲ ဖြည့်ပေးပါ။" }, { status: 400 });
+  }
+  // The target must be a real user — the old code returned success
+  // even when the balance write failed (e.g. unknown user id, whose
+  // token_balances insert violates the profiles FK).
+  const { data: target } = await service
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .single();
+  if (!target) {
+    return NextResponse.json({ error: "ဒီ user ကို မတွေ့ပါ။" }, { status: 404 });
+  }
   const { data: existing } = await service
     .from("token_balances")
     .select("balance")
     .eq("owner_id", userId)
     .single();
   const nextBalance = (existing?.balance ?? 0) + amount;
-  if (existing) {
-    await service
-      .from("token_balances")
-      .update({ balance: nextBalance, updated_at: new Date().toISOString() })
-      .eq("owner_id", userId);
-  } else {
-    await service
-      .from("token_balances")
-      .insert({ owner_id: userId, balance: nextBalance });
+  const writeError = existing
+    ? (
+        await service
+          .from("token_balances")
+          .update({ balance: nextBalance, updated_at: new Date().toISOString() })
+          .eq("owner_id", userId)
+      ).error
+    : (
+        await service
+          .from("token_balances")
+          .insert({ owner_id: userId, balance: nextBalance })
+      ).error;
+  if (writeError) {
+    return NextResponse.json({ error: "Token ဖြည့်လို့ မရပါ။ ထပ်ကြိုးစားပါ။" }, { status: 502 });
   }
+  // Audit log is best-effort: a log failure must not report a
+  // successful refill as failed, but it also must not hide a
+  // balance-write failure (checked above).
   await service.from("usage_events").insert({
     owner_id: userId,
     event: "admin_token_refill",

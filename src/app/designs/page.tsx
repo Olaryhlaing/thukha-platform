@@ -50,10 +50,14 @@ export default function DesignsPage() {
     const supabase = getSupabase();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     if (token) {
-      await fetch(`/api/designs?id=${encodeURIComponent(id)}`, {
+      // Only remove locally when the server confirms the delete —
+      // the old code removed it even on a 404/403, so a refresh
+      // brought the design back (a confusing false delete).
+      const res = await fetch(`/api/designs?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) return;
     } else {
       const next = readGuestDesigns().filter((d) => d.id !== id);
       localStorage.setItem("thukha-designs", JSON.stringify(next));

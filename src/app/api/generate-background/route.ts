@@ -54,7 +54,7 @@ async function geminiErrorMessage(res: Response): Promise<string> {
     return "Gemini model မတွေ့ပါ။ .env.local မှာ AI_BACKGROUND_MODEL=gemini-2.5-flash-image ဖြစ်မဖြစ် စစ်ပြီး server ပြန် run ပါ။";
   }
   if (status === 429) {
-    return "Gemini quota / rate limit ပြည့်သွားပြီ။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။";
+    return "Gemini free quota က 0 ဖြစ်နေလို့ စောင့်လည်း မရဘူး။ Cloudflare free (IMAGE_PROVIDER=cloudflare) ကို သုံးပါ၊ ဒါမှမဟုတ် Gemini billing (Tier 1) ချိတ်ပါ။";
   }
   if (status === 400 && detail) {
     return `Gemini က prompt ကို လက်မခံပါ: ${detail}`;
@@ -124,10 +124,18 @@ async function deductServer(
   const balance = await fetchServerBalance(service, user);
   if (balance === null || balance < cost) return null;
   const next = balance - cost;
-  await service
+  // Atomic guard: only deduct when the balance is still >= cost at
+  // update time (two concurrent requests must not both spend the
+  // same tokens and push the balance negative). If this fails, the
+  // caller must NOT return the image as if it were paid for.
+  const { data: updated, error: updateError } = await service
     .from("token_balances")
     .update({ balance: next, updated_at: new Date().toISOString() })
-    .eq("owner_id", user.id);
+    .eq("owner_id", user.id)
+    .gte("balance", cost)
+    .select("balance")
+    .single();
+  if (updateError || !updated) return null;
   // Best effort log — a log failure must not lose the image.
   await service.from("generations").insert({
     owner_id: user.id,
@@ -370,6 +378,12 @@ export async function POST(request: Request) {
         serverUser && service
           ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", 0, cfModel)
           : null;
+      if (serverUser && service && serverBalance === null) {
+        return NextResponse.json(
+          { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
+          { status: 502 },
+        );
+      }
       return NextResponse.json({
         // Cloudflare's docs say this model's image is JPEG, not PNG.
         imageUrl: `data:image/jpeg;base64,${cfImage}`,
@@ -438,6 +452,12 @@ export async function POST(request: Request) {
         serverUser && service
           ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
           : null;
+      if (serverUser && service && serverBalance === null) {
+        return NextResponse.json(
+          { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
+          { status: 502 },
+        );
+      }
       return NextResponse.json({
         imageUrl: `data:${part.inlineData.mimeType ?? "image/png"};base64,${part.inlineData.data}`,
         model,
@@ -502,6 +522,12 @@ export async function POST(request: Request) {
         serverUser && service
           ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
           : null;
+      if (serverUser && service && serverBalance === null) {
+        return NextResponse.json(
+          { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
+          { status: 502 },
+        );
+      }
       return NextResponse.json({
         imageUrl,
         model,
@@ -555,6 +581,12 @@ export async function POST(request: Request) {
       serverUser && service
         ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
         : null;
+      if (serverUser && service && serverBalance === null) {
+        return NextResponse.json(
+          { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
+          { status: 502 },
+        );
+      }
     return NextResponse.json({
       imageUrl,
       model,

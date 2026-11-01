@@ -50,9 +50,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/designs" className="min-h-[44px] flex items-center text-thukha-violet">
                 Designs
               </Link>
-              <Link href="/admin/login" className="min-h-[44px] flex items-center text-thukha-violet">
-                Admin
-              </Link>
+              {/* No static Admin link here: AuthNav shows it only to
+                  logged-in admins (server-side role check), so
+                  guests and customers never see admin navigation. */}
               <AuthNav />
               <Link
                 href="/create"
