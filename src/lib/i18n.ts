@@ -55,7 +55,6 @@ const my: Dict = {
   // Login
   "login.title": "Login",
   "login.notConnectedNote": "login လုပ်လို့ရမယ်။ အခု guest အနေနဲ့ /create မှာ ဆက်သုံးလို့ရတယ်။",
-  "login.intro": "Email နဲ့ password နဲ့ login လုပ်ပါ။ Account ရဲ့ role ပေါ် မူတည်ပြီး Admin ဆိုရင် /admin ကို၊ Customer ဆိုရင် /create ကို အလိုလို သွားမယ်။",
   "login.errEnter": "Email နဲ့ password ရေးပေးပါ။",
   "login.errNotConfirmed": "Email confirm လုပ်ပြီးမှ login ရမယ်။ inbox ထဲက confirm link ကို နှိပ်ပါ။",
   "login.errRate": "ကြိုးစားတာ များသွားပြီ။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။",
@@ -329,7 +328,6 @@ const en: Dict = {
   // Login
   "login.title": "Login",
   "login.notConnectedNote": "to log in. For now you can keep using /create as a guest.",
-  "login.intro": "Log in with your email and password. Depending on your account role, admins go to /admin and customers go to /create automatically.",
   "login.errEnter": "Please enter your email and password.",
   "login.errNotConfirmed": "Please confirm your email first — click the confirm link in your inbox, then log in.",
   "login.errRate": "Too many attempts. Please wait a moment and try again.",

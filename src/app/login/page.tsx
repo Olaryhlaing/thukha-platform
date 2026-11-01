@@ -76,9 +76,6 @@ export default function LoginPage() {
       <PlatformAbout />
       <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-bold">{t("login.title")}</h1>
-      <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
-        {t("login.intro")}
-      </p>
       <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
         {t("common.email")}
         <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={`${inputClass} mt-1`} />
