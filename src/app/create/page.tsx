@@ -178,6 +178,9 @@ function CreatePageInner() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   // Server tokens (logged-in) take over from browser tokens (guest).
   const [serverTokens, setServerTokens] = useState<number | null>(null);
+  // Admin accounts are unlimited (role=admin, server-side): no
+  // balance check, no deduction — the pill shows ∞ instead of a number.
+  const [isUnlimited, setIsUnlimited] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   // Image provider (from the generate API's GET): "cloudflare" means
   // the free FLUX model, which cannot edit reference images.
@@ -266,7 +269,8 @@ function CreatePageInner() {
     format: channelInfo.format,
     referenceCount: referenceImages.length,
   });
-  const effectiveTokens = serverTokens ?? tokens;
+  // Admin unlimited: never blocked by a (browser or server) number.
+  const effectiveTokens = isUnlimited ? Number.POSITIVE_INFINITY : (serverTokens ?? tokens);
   // Guest = no Supabase session. Guests may generate and preview,
   // but they must NOT download a clean image (see below).
   const isGuest = !authToken;
@@ -293,8 +297,10 @@ function CreatePageInner() {
       const res = await fetch("/api/tokens", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as { mode?: string; balance?: number };
-      if (json.mode === "server" && typeof json.balance === "number") {
+      const json = (await res.json()) as { mode?: string; balance?: number; unlimited?: boolean };
+      if (json.mode === "server" && json.unlimited) {
+        setIsUnlimited(true);
+      } else if (json.mode === "server" && typeof json.balance === "number") {
         setServerTokens(json.balance);
       }
     });
@@ -405,12 +411,16 @@ function CreatePageInner() {
         error?: string;
         cost?: number;
         serverBalance?: number;
+        unlimited?: boolean;
       };
       if (!res.ok || !data.imageUrl) {
         setAiError(data.error ?? "AI ပုံ ထုတ်လို့ မရသေးပါ။");
         return;
       }
-      if (typeof data.serverBalance === "number") {
+      if (data.unlimited) {
+        // Admin: nothing deducted, nothing to update.
+        setIsUnlimited(true);
+      } else if (typeof data.serverBalance === "number") {
         setServerTokens(data.serverBalance);
       } else {
         spendTokens(data.cost ?? cost);
@@ -616,7 +626,9 @@ function CreatePageInner() {
           စာ အရင် ရိုက် → ပုံလိုချင်တာ ရေး → AI ပုံ ထုတ် → စာပါတဲ့ ပုံ download။
         </p>
         <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
-          ကိုယ့် Token: {effectiveTokens} / {START_TOKENS} · {serverTokens !== null ? "Server (login)" : "Browser (guest)"} · {imageProvider === "cloudflare" ? "Cloudflare FLUX နဲ့ ဖန်တီးတယ်" : "Gemini နဲ့ ဖန်တီးတယ်"}
+          {isUnlimited
+            ? "ကိုယ့် Token: ∞ Unlimited (Admin) · Server (login)"
+            : `ကိုယ့် Token: ${effectiveTokens} / ${START_TOKENS} · ${serverTokens !== null ? "Server (login)" : "Browser (guest)"}`} · {imageProvider === "cloudflare" ? "Cloudflare FLUX နဲ့ ဖန်တီးတယ်" : "Gemini နဲ့ ဖန်တီးတယ်"}
         </p>
       </header>
 
@@ -851,10 +863,12 @@ function CreatePageInner() {
           </p>
         )}
         <p className="text-sm leading-6 text-thukha-indigo">
-          ဒီပုံ ကုန်ကျမယ့် Token: <b>{cost}</b> · အခြေခံ 10 + ကိုယ့်ပုံ တစ်ပုံ 5 + Story/Cover ဆို 5 + အသေးစိတ် prompt (စာလုံး 120 ကျော်) ဆို 5 · ပုံ အောင်မြင်မှ ဖြတ်မယ်၊ မအောင်ရင် မဖြတ်ဘူး။
+          {isUnlimited
+            ? "Admin account — Token မဖြတ်ဘူး၊ Unlimited။ ပုံဘယ်နှစ်ပုံထုတ်ထုတ် လက်ကျန် ကုန်မှာ မဟုတ်ဘူး။"
+            : <>ဒီပုံ ကုန်ကျမယ့် Token: <b>{cost}</b> · အခြေခံ 10 + ကိုယ့်ပုံ တစ်ပုံ 5 + Story/Cover ဆို 5 + အသေးစိတ် prompt (စာလုံး 120 ကျော်) ဆို 5 · ပုံ အောင်မြင်မှ ဖြတ်မယ်၊ မအောင်ရင် မဖြတ်ဘူး။</>}
         </p>
         <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50">
-          {aiLoading ? "AI ပုံ ထုတ်နေပါတယ်…" : `AI ပုံ ဖန်တီးပါ (${cost} token)`}
+          {aiLoading ? "AI ပုံ ထုတ်နေပါတယ်…" : isUnlimited ? "AI ပုံ ဖန်တီးပါ (Admin — အလကား)" : `AI ပုံ ဖန်တီးပါ (${cost} token)`}
         </button>
         {aiError && (
           <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">

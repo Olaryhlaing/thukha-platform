@@ -230,6 +230,14 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
      ဒါကြောင့် `schema.sql` အသစ်ကို SQL Editor မှာ တစ်ခါ ပြန် run မှ
      ဒီကာကွယ်မှု အလုပ်လုပ်မယ်။ Signup ကနေ admin ဖြစ်လို့ မရဘူး —
      ဒါက ရည်ရွယ်ချက်ပါ။
+- **Admin token Unlimited:** Admin account (role=admin) က /create မှာ ပုံထုတ်ရင်
+  ThuKha token လုံးဝ မဖြတ်ဘူး၊ လက်ကျန် စစ်တာလည်း မရှိဘူး — pill မှာ
+  "∞ Unlimited (Admin)" လို့ ပေါ်မယ်၊ generation တွေကိုတော့ cost 0 နဲ့
+  /admin stats မှာ မှတ်ထားတယ်။ Customer account တွေကတော့ အရင်အတိုင်း
+  100 စ၊ တစ်ပုံ 10–35 token ဖြတ်တယ်။ သတိထား: ThuKha token unlimited
+  ဆိုတာနဲ့ AI provider quota unlimited လို့ မဆိုလိုဘူး — Cloudflare free
+  neurons (တစ်နေ့ ~170 ပုံ) ဒါမှမဟုတ် Gemini paid quota / ကုန်ကျစရိတ်
+  (~$0.039/ပုံ) ကတော့ သက်ဆိုင်ရာ provider ရဲ့ limit အတိုင်း ရှိနေဦးမယ်။
 - **Admin token ပြန်ဖြည့် (prototype):** `/admin` မှာ user တစ်ယောက်ချင်းစီရဲ့
   ဘေးမှာ amount ရိုက်ပြီး **Token ဖြည့်ပါ** နှိပ်ရင် အဲဒီ amount ကို
   သူ့ရဲ့ server balance ထဲ ပေါင်းပေးတယ် (1–10000 အတွင်း)၊

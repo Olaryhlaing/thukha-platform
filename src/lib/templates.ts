@@ -1,6 +1,7 @@
-/* Shared template data: Templates page lists them, /create prefills
-   from them via ?template=<id>. The prompt is a starting idea the
-   customer can edit — it is never rendered as text in the image. */
+/* Shared template data: /create prefills from them via
+   ?template=<id>. The prompt is a starting idea the customer can
+   edit — it is never rendered as text in the image. (The old
+   /templates browsing page was removed on 2026-11-01.) */
 export type Template = {
   id: string;
   type: string;

@@ -10,7 +10,7 @@ import { getSupabase } from "@/lib/supabase/client";
    customer /create flow from here), /create for customers. The
    old hero/steps home content is gone from /; the login page
    itself carries the ThuKha summary (PlatformAbout), and
-   Templates / Create stay reachable from the header. */
+   Create stays reachable from the header. */
 export default function Home() {
   const router = useRouter();
 

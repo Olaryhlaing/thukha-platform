@@ -32,6 +32,17 @@ export async function GET(request: Request) {
         null,
     });
   }
+  // Admin accounts are unlimited: no balance to track, never
+  // deduct. Role comes from profiles via the service key — signup
+  // cannot set it, only the owner SQL promotion can.
+  const { data: profile } = await service
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role === "admin") {
+    return NextResponse.json({ mode: "server" as const, balance: null, unlimited: true });
+  }
   const { data } = await service
     .from("token_balances")
     .select("balance")

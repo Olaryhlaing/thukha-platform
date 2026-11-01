@@ -7,8 +7,8 @@ import AuthNav from "@/components/AuthNav";
 
 /* Site header. On auth pages (/login, /signup, /admin/login) the
    navigation is hidden entirely — only the logo stays — so the
-   login/signup pages are clean and do not repeat Templates /
-   Create / Brands / Designs / Login / Signup / CTA links above
+   login/signup pages are clean and do not repeat Create /
+   Brands / Designs / Login / Signup / CTA links above
    the form itself. Every other page keeps the full navigation. */
 const AUTH_PAGES = ["/login", "/signup", "/admin/login"];
 
@@ -31,9 +31,6 @@ export default function SiteHeader() {
         </Link>
         {!isAuthPage && (
           <nav className="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold sm:gap-4">
-            <Link href="/templates" className="min-h-[44px] flex items-center text-thukha-violet">
-              Templates
-            </Link>
             <Link href="/create" className="min-h-[44px] flex items-center text-thukha-violet">
               Create
             </Link>

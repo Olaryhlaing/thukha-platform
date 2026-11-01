@@ -42,6 +42,22 @@ async function fetchServerBalance(
   return START_TOKENS;
 }
 
+
+/* Admin check: role comes from profiles via the service key.
+   Signup cannot set role='admin' — only the owner SQL promotion
+   can — so this cannot be self-granted from the browser. */
+async function isAdminRole(
+  service: SupabaseClient,
+  user: User,
+): Promise<boolean> {
+  const { data } = await service
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  return data?.role === "admin";
+}
+
 /* Turn a Gemini HTTP failure into a specific Burmese message, so
    the customer is not left guessing between "key missing" (503,
    handled earlier) and "key rejected / model / quota" (502 here).
@@ -125,7 +141,7 @@ export async function GET() {
   return NextResponse.json({ provider, configured });
 }
 
-async function deductServer(
+async function chargeServer(
   service: SupabaseClient,
   user: User,
   cost: number,
@@ -133,9 +149,23 @@ async function deductServer(
   format: string,
   referenceCount: number,
   model: string,
-): Promise<number | null> {
+  isAdmin: boolean,
+): Promise<{ ok: boolean; serverBalance?: number; unlimited?: boolean }> {
+  // Admin accounts are unlimited: never check or deduct a balance,
+  // but still log the generation (cost 0) so /admin stats stay true.
+  if (isAdmin) {
+    await service.from("generations").insert({
+      owner_id: user.id,
+      prompt,
+      model,
+      format,
+      reference_count: referenceCount,
+      cost_tokens: 0,
+    });
+    return { ok: true, unlimited: true };
+  }
   const balance = await fetchServerBalance(service, user);
-  if (balance === null || balance < cost) return null;
+  if (balance === null || balance < cost) return { ok: false };
   const next = balance - cost;
   // Atomic guard: only deduct when the balance is still >= cost at
   // update time (two concurrent requests must not both spend the
@@ -148,7 +178,7 @@ async function deductServer(
     .gte("balance", cost)
     .select("balance")
     .single();
-  if (updateError || !updated) return null;
+  if (updateError || !updated) return { ok: false };
   // Best effort log — a log failure must not lose the image.
   await service.from("generations").insert({
     owner_id: user.id,
@@ -158,7 +188,7 @@ async function deductServer(
     reference_count: referenceCount,
     cost_tokens: cost,
   });
-  return next;
+  return { ok: true, serverBalance: next };
 }
 
 /* Dev 1 API contract (DEV1-DETAILED-GUIDE.md §5) — custom AI images.
@@ -303,7 +333,9 @@ export async function POST(request: Request) {
     // a Gemini call. Guests skip this and use browser tokens.
     const serverUser = await getUserFromToken(body.authToken);
     const service = serverUser ? getServiceSupabase() : null;
-    if (serverUser && service) {
+    // Admin accounts are unlimited: skip the balance pre-check.
+    const isAdmin = serverUser && service ? await isAdminRole(service, serverUser) : false;
+    if (serverUser && service && !isAdmin) {
       const balance = await fetchServerBalance(service, serverUser);
       if (balance !== null && balance < cost) {
         return NextResponse.json(
@@ -387,11 +419,11 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-      const serverBalance =
+      const charge =
         serverUser && service
-          ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", 0, cfModel)
+          ? await chargeServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", 0, cfModel, isAdmin)
           : null;
-      if (serverUser && service && serverBalance === null) {
+      if (serverUser && service && (!charge || !charge.ok)) {
         return NextResponse.json(
           { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
           { status: 502 },
@@ -405,7 +437,7 @@ export async function POST(request: Request) {
         generated: true,
         cost,
         provider: "cloudflare",
-        ...(serverBalance !== null ? { serverBalance } : {}),
+        ...(charge?.unlimited ? { unlimited: true } : charge?.serverBalance !== undefined ? { serverBalance: charge.serverBalance } : {}),
       });
     }
 
@@ -461,11 +493,11 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-      const serverBalance =
+      const charge =
         serverUser && service
-          ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
+          ? await chargeServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model, isAdmin)
           : null;
-      if (serverUser && service && serverBalance === null) {
+      if (serverUser && service && (!charge || !charge.ok)) {
         return NextResponse.json(
           { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
           { status: 502 },
@@ -477,7 +509,7 @@ export async function POST(request: Request) {
         prompt,
         generated: true,
         cost,
-        ...(serverBalance !== null ? { serverBalance } : {}),
+        ...(charge?.unlimited ? { unlimited: true } : charge?.serverBalance !== undefined ? { serverBalance: charge.serverBalance } : {}),
       });
     }
 
@@ -531,11 +563,11 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-      const serverBalance =
+      const charge =
         serverUser && service
-          ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
+          ? await chargeServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model, isAdmin)
           : null;
-      if (serverUser && service && serverBalance === null) {
+      if (serverUser && service && (!charge || !charge.ok)) {
         return NextResponse.json(
           { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
           { status: 502 },
@@ -547,7 +579,7 @@ export async function POST(request: Request) {
         prompt,
         generated: true,
         cost,
-        ...(serverBalance !== null ? { serverBalance } : {}),
+        ...(charge?.unlimited ? { unlimited: true } : charge?.serverBalance !== undefined ? { serverBalance: charge.serverBalance } : {}),
       });
     }
 
@@ -590,11 +622,11 @@ export async function POST(request: Request) {
         { status: 502 },
       );
     }
-    const serverBalance =
+    const charge =
       serverUser && service
-        ? await deductServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model)
+        ? await chargeServer(service, serverUser, cost, userPrompt, body.format ?? "1080x1080", parsedRefs.length, model, isAdmin)
         : null;
-      if (serverUser && service && serverBalance === null) {
+    if (serverUser && service && (!charge || !charge.ok)) {
         return NextResponse.json(
           { error: "Token ဖြတ်လို့ မရပါ။ Token လက်ကျန် စစ်ပြီး ထပ်ကြိုးစားပါ။" },
           { status: 502 },
@@ -606,7 +638,7 @@ export async function POST(request: Request) {
       prompt,
       generated: true,
       cost,
-      ...(serverBalance !== null ? { serverBalance } : {}),
+      ...(charge?.unlimited ? { unlimited: true } : charge?.serverBalance !== undefined ? { serverBalance: charge.serverBalance } : {}),
     });
   } catch {
     return NextResponse.json(
