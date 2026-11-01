@@ -195,6 +195,17 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
      Confirm link ကို နှိပ်ရင် `/auth/confirm` က code / hash နှစ်မျိုးလုံးကို
      ကိုင်ပြီး session ရရင် `/create` ကို သွားမယ်၊ link ကုန်သွားရင်
      Signup ကနေ **Confirm email ပြန်ပို့ပါ** နဲ့ ပြန်ပို့လို့ရတယ်။
+- **Forgot password (Redirect URLs မှာ ဒါလည်း ထည့်ပါ):**
+  `/forgot-password` က reset link ကို `/auth/reset-password` အတိအကျ ပို့တယ်၊
+  ဒါကြောင့် Redirect URLs မှာ ဒီ ၂ ခုပါ ထည့်ရမယ်:
+  `https://thukha-platform.vercel.app/auth/reset-password` နဲ့
+  `http://localhost:3000/auth/reset-password` (local စမ်းဖို့)။
+  ဒါတွေ မရှိရင် Supabase က reset link ကို ပိတ်ထားနိုင်တယ်။
+  Reset password email template ကိုယ်တိုင် ပြင်ထားရင် `{{ .ConfirmationURL }}`
+  ကို မဖျက်ပါနဲ့ — အဲဒါကပဲ reset link ကို သယ်သွားတာ။
+  စမ်းပုံ: Login မှာ **ပြန်သတ်မှတ်ပါ** → email ရိုက် → inbox (Spam လည်း စစ်)
+  က link နှိပ် → `/auth/reset-password` မှာ password အသစ် (အနည်းဆုံး ၈ လုံး)
+  ရိုက် → ပြောင်းပြီးရင် Login မှာ password အသစ်နဲ့ ဝင်ပါ။
 - `/brands` မှာ Brand ထည့်လို့ရပြီး၊ `/designs` မှာ /create ကနေ သိမ်းထားတဲ့
   Design တွေ ပေါ်မယ်။
 - **Admin (role ခွဲခြားမှု — သေချာ):** Admin account နဲ့ Customer account ကို

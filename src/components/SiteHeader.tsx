@@ -5,12 +5,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
 
-/* Site header. On auth pages (/login, /signup, /admin/login) the
-   navigation is hidden entirely — only the logo stays — so the
-   login/signup pages are clean and do not repeat Create /
-   Brands / Designs / Login / Signup / CTA links above
-   the form itself. Every other page keeps the full navigation. */
-const AUTH_PAGES = ["/login", "/signup", "/admin/login"];
+/* Site header. On auth pages (/login, /signup, /admin/login,
+   /forgot-password, /auth/reset-password) the navigation is
+   hidden entirely — only the logo stays — so the login/signup
+   pages are clean and do not repeat Create / Brands / Designs /
+   Login / Signup / CTA links above the form itself. Every other
+   page keeps the full navigation. */
+const AUTH_PAGES = ["/login", "/signup", "/admin/login", "/forgot-password", "/auth/reset-password"];
 
 export default function SiteHeader() {
   const pathname = usePathname();

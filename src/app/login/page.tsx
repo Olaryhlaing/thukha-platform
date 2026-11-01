@@ -95,6 +95,9 @@ export default function LoginPage() {
       <p className="text-sm text-thukha-indigo/70">
         Account မရှိသေးရင် <Link href="/signup" className="font-bold text-thukha-violet">Signup လုပ်ပါ</Link>
       </p>
+      <p className="text-sm text-thukha-indigo/70">
+        Password မေ့သွားလား? <Link href="/forgot-password" className="font-bold text-thukha-violet">ပြန်သတ်မှတ်ပါ</Link>
+      </p>
       </div>
     </main>
   );
