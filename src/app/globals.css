@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* ThuKha Platform — fresh build, Brand Guideline 2026–2027
+   Violet #5946ED and Lilac #A78BFA mostly.
+   Indigo #10113D is for dark text/contrast only. */
+
+@theme {
+  --color-thukha-indigo: #10113d;
+  --color-thukha-violet: #5946ed;
+  --color-thukha-lilac: #a78bfa;
+  --color-thukha-blue: #2f80ed;
+  --color-thukha-teal: #22c7a9;
+  --color-thukha-mist: #f6f7fb;
+  --font-sans: var(--font-inter), var(--font-myanmar), "Noto Sans Myanmar",
+    "Pyidaungsu", system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #10113d;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}

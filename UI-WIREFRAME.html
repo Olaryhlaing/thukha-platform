@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThuKha UI Wireframe v2 — Attractive</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans Myanmar",system-ui,sans-serif;color:#10113d;background:#fafaff}
+  .wrap{max-width:980px;margin:0 auto;padding:20px}
+  h1{font-size:22px;margin:0 0 4px}
+  p.note{color:#5946ed;margin:0 0 18px}
+  .screen{border:1px solid #e3dcff;border-radius:24px;overflow:hidden;margin:0 0 28px;background:#fff;box-shadow:0 20px 50px rgba(89,70,237,.15)}
+  .screen h2{margin:0;padding:14px 18px;background:#f6f7fb;font-size:15px;border-bottom:1px solid #eee}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}
+  .logo{font-weight:800;display:flex;gap:8px;align-items:center}
+  .dot{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#5946ed,#a78bfa);display:inline-block}
+  .cta{background:#5946ed;color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;box-shadow:0 8px 20px rgba(89,70,237,.35)}
+  .hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#4c1d95,#5946ed 45%,#a78bfa);color:#fff;padding:32px 24px;display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+  .hero:before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.18);right:-60px;top:-80px}
+  .hero:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;border:2px solid rgba(255,255,255,.25);left:-40px;bottom:-60px}
+  .badge{display:inline-block;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 12px;font-size:12px}
+  .hero h3{margin:14px 0 10px;font-size:36px;line-height:1.25;position:relative;z-index:1}
+  .hero p{margin:0 0 18px;opacity:.92;position:relative;z-index:1}
+  .btn{display:inline-block;background:#fff;color:#5946ed;border-radius:999px;padding:12px 22px;font-weight:800;font-size:14px;position:relative;z-index:1}
+  .btn2{display:inline-block;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:999px;padding:12px 22px;font-size:14px;margin-left:8px;position:relative;z-index:1}
+  .stats{display:flex;gap:16px;margin-top:18px;position:relative;z-index:1;font-size:13px}
+  .stats b{display:block;font-size:18px}
+  .promo{position:relative;z-index:1;background:linear-gradient(160deg,#7c5cff,#a78bfa);border-radius:20px;padding:20px;text-align:center;box-shadow:0 18px 35px rgba(0,0,0,.25);transform:rotate(2deg)}
+  .promo .logo2{width:52px;height:52px;border-radius:50%;background:#fff;color:#5946ed;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .promo b{font-size:22px;line-height:1.4;display:block}
+  .pill{margin:16px auto 0;background:#fff;color:#5946ed;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:700;display:inline-block}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:18px}
+  .card{border:1px solid #e3dcff;background:linear-gradient(180deg,#fff,#f3efff);border-radius:16px;padding:14px;min-height:110px;font-size:13px}
+  .num{width:32px;height:32px;border-radius:50%;background:#5946ed;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:8px}
+  .tpl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:18px}
+  .tplcard{border-radius:16px;overflow:hidden;border:1px solid #e3dcff}
+  .tplhead{height:90px;background:linear-gradient(135deg,#5946ed,#a78bfa);color:#fff;display:flex;align-items:flex-end;padding:12px;font-weight:700}
+  .tplbody{padding:12px;font-size:13px}
+  .create{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .form{padding:18px;border-right:1px solid #eee}
+  .field{border:1px solid #c9b8ff;border-radius:12px;padding:11px;margin:8px 0;font-size:13px;color:#555;background:#fbf9ff}
+  .label{font-size:12px;font-weight:800;margin-top:12px}
+  .preview{padding:18px;background:linear-gradient(180deg,#f6f7fb,#efeaff)}
+  .canvas{aspect-ratio:1/1;border-radius:20px;background:linear-gradient(150deg,#5946ed,#8b5cf6 55%,#a78bfa);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px;box-shadow:0 18px 35px rgba(89,70,237,.35)}
+  .canvas b{font-size:24px;line-height:1.4}
+  .export{margin:16px 0;background:linear-gradient(90deg,#5946ed,#a78bfa);color:#fff;text-align:center;border-radius:999px;padding:13px;font-weight:800;box-shadow:0 10px 25px rgba(89,70,237,.35)}
+  .chips{font-size:12px;display:flex;gap:6px;flex-wrap:wrap}
+  .chips span{background:#fff;border:1px solid #d8ccff;border-radius:999px;padding:5px 10px}
+  .steps{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #eee;font-size:13px}
+  .steps span{background:#5946ed;color:#fff;border-radius:999px;padding:5px 14px;font-weight:700}
+  .steps span.dim{background:#e9e4ff;color:#5946ed}
+  .banner{margin:18px;background:linear-gradient(90deg,#5946ed,#a78bfa);color:#fff;border-radius:18px;padding:18px;text-align:center;font-weight:700}
+  @media(max-width:640px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}.tpl{grid-template-columns:1fr}.create{grid-template-columns:1fr}.form{border-right:0;border-bottom:1px solid #eee}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ThuKha UI ပုံကြမ်း v2 — ပိုဆွဲဆောင်မှုရှိတဲ့ ပုံစံ</h1>
+  <p class="note">Violet #5946ED + Lilac #A78BFA • Glow + Gradient + Soft Shadow • Burmese-first</p>
+
+  <div class="screen">
+    <h2>Screen 1 — Home /</h2>
+    <div class="nav"><span class="logo"><span class="dot"></span> ThuKha Platform</span><span>Templates &nbsp; Create &nbsp; <span class="cta">စတင်ဖန်တီးပါ</span></span></div>
+    <div class="hero">
+      <div>
+        <span class="badge">Dec 1 MVP • Myanmar Businesses</span>
+        <h3>သင့်လုပ်ငန်းကို AI နဲ့ တိုးတက်စေမယ်</h3>
+        <p>၁ မိနစ်အတွင်း၊ မြန်မာစာ ၁၀၀% မှန်တဲ့ promo post အပြီးအစီး။</p>
+        <span class="btn">စတင်ဖန်တီးပါ →</span><span class="btn2">Templates ကြည့်ပါ</span>
+        <div class="stats"><span><b>၁ မိနစ်</b>ဖန်တီးချိန်</span><span><b>၁၀၀%</b>မြန်မာစာ မှန်</span><span><b>၃ မျိုး</b>Export အရွယ်</span></div>
+      </div>
+      <div class="promo">
+        <div class="logo2">T</div>
+        <b>သင့်လုပ်ငန်းကို<br>AI နဲ့ တိုးတက်စေမယ်</b>
+        <div style="margin-top:8px;font-size:13px;opacity:.9">အရသာရှိပြီး စျေးသင့်</div>
+        <div class="pill">အခုပဲ မှာယူပါ</div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="num">1</div><b>Brief</b><br>လုပ်ငန်း၊ product၊ target</div>
+      <div class="card"><div class="num">2</div><b>AI Background</b><br>စာမပါတဲ့ ပုံ</div>
+      <div class="card"><div class="num">3</div><b>မြန်မာစာ + Logo</b><br>ပြင်လို့ရတဲ့ layer</div>
+      <div class="card"><div class="num">4</div><b>Export</b><br>PNG + Caption</div>
+    </div>
+    <div class="tpl">
+      <div class="tplcard"><div class="tplhead">စားသောက်ဆိုင်</div><div class="tplbody"><b>မုန့်ဟင်းခါး Promotion</b><br>1080 × 1080 • ဖန်တီးပါ →</div></div>
+      <div class="tplcard"><div class="tplhead" style="background:linear-gradient(135deg,#a78bfa,#5946ed)">Online Shop</div><div class="tplbody"><b>New Collection</b><br>1080 × 1920 • ဖန်တီးပါ →</div></div>
+      <div class="tplcard"><div class="tplhead" style="background:linear-gradient(135deg,#7c5cff,#c4b5fd)">အလှအပ</div><div class="tplbody"><b>Salon Promotion</b><br>1080 × 1080 • ဖန်တီးပါ →</div></div>
+    </div>
+    <div class="banner">၁ မိနစ်ပဲ လိုတယ် — အခု စမ်းကြည့်ပါ → /create</div>
+  </div>
+
+  <div class="screen">
+    <h2>Screen 2 — Create /create</h2>
+    <div class="steps"><span>1 Brief</span><span>2 Editor</span><span class="dim">3 Export</span></div>
+    <div class="create">
+      <div class="form">
+        <div class="label">လုပ်ငန်းအမျိုးအစား</div><div class="field">စားသောက်ဆိုင် ▾</div>
+        <div class="label">Headline</div><div class="field" style="border-color:#5946ed;background:#fff">သင့်လုပ်ငန်းကို AI နဲ့ တိုးတက်စေမယ်</div>
+        <div class="label">Subheadline + CTA + ဈေး</div><div class="field">အရသာရှိပြီး စျေးသင့် • အခုပဲ မှာယူပါ</div>
+        <div class="label">Headline size</div><div class="field">━━●━━ 84px</div>
+        <div class="label">Logo upload</div><div class="field">Logo တင်ပါ (မူရင်းအတိုင်း)</div>
+      </div>
+      <div class="preview">
+        <div style="font-weight:700">Live Preview — 1080 × 1080</div>
+        <div class="canvas" style="margin-top:12px">
+          <div style="font-size:12px;opacity:.9">LOGO</div>
+          <b>သင့်လုပ်ငန်းကို<br>AI နဲ့ တိုးတက်စေမယ်</b>
+          <div style="margin-top:8px;font-size:13px">အရသာရှိပြီး စျေးသင့်</div>
+          <div class="pill" style="margin-top:16px">အခုပဲ မှာယူပါ</div>
+        </div>
+        <div class="export">PNG Download — 1080 × 1080</div>
+        <div class="chips"><span>✓ စာလုံးပေါင်း</span><span>✓ ဈေး/ဖုန်း</span><span>✓ Logo မူရင်း</span></div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:13px;color:#666">မှတ်ချက်: ဒါက ပုံကြမ်း (wireframe) v2 ပဲ — အစစ်အမှန် app မဟုတ်သေးဘူး။ အရောင်၊ glow၊ shadow၊ layout ကို ဒီအတိုင်း အစစ်မှာ သုံးမယ်။</p>
+</div>
+</body>
+</html>
