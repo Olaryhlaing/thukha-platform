@@ -7,7 +7,8 @@ import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 type Stats = {
   users: { id: string; display_name: string | null; role: string; created_at: string }[];
   balances: { owner_id: string; balance: number }[];
-  generations: { id: string; prompt: string; model: string; format: string | null; cost_tokens: number; created_at: string }[];
+  generations: { id: string; owner_id: string | null; prompt: string; model: string; format: string | null; cost_tokens: number; created_at: string }[];
+  perUser: { id: string; display_name: string | null; role: string; balance: number | null; generations: number; spent: number }[];
   counts: { users: number; brands: number; designs: number; generations: number };
 };
 
@@ -21,6 +22,7 @@ export default function AdminPage() {
   );
   const [refillAmounts, setRefillAmounts] = useState<Record<string, string>>({});
   const [refillMessage, setRefillMessage] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   async function loadStats() {
     const supabase = getSupabase();
@@ -86,6 +88,39 @@ export default function AdminPage() {
     setRefillMessage(`Token ${amount} ဖြည့်ပြီးပြီ။ လက်ကျန် ${json.balance} ဖြစ်သွားပြီ။`);
   }
 
+  async function deleteGeneration(id: string) {
+    if (!window.confirm("ဒီ generation ကို တကယ် ဖျက်မလား? ပြန်ယူလို့ မရဘူး။ (Token ပြန်အမ်းမှာ မဟုတ်ဘူး — log ပဲ ဖျက်မှာ။)")) {
+      return;
+    }
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) {
+      setDeleteMessage("Login လုပ်ပြီးမှ ဖျက်လို့ရမယ်။");
+      return;
+    }
+    const res = await fetch("/api/admin/generations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    const json = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      setDeleteMessage(json.error ?? "Generation ဖျက်လို့ မရပါ။");
+      return;
+    }
+    // Remove locally only on server ok, and keep the count honest.
+    setStats((prev) =>
+      prev
+        ? {
+            ...prev,
+            generations: prev.generations.filter((g) => g.id !== id),
+            counts: { ...prev.counts, generations: Math.max(0, prev.counts.generations - 1) },
+          }
+        : prev,
+    );
+    setDeleteMessage("Generation ဖျက်ပြီးပြီ။");
+  }
+
   if (error) {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-10">
@@ -105,6 +140,19 @@ export default function AdminPage() {
   }
   const balanceOf = (id: string) =>
     stats.balances.find((b) => b.owner_id === id)?.balance ?? "—";
+  // Who generated a row: display name from the per-user breakdown
+  // (or the users list), falling back to a short id for deleted /
+  // unknown owners (generations.owner_id is SET NULL on delete).
+  const nameOf = (ownerId: string | null) => {
+    if (!ownerId) return "—";
+    return (
+      stats.perUser.find((p) => p.id === ownerId)?.display_name ??
+      stats.users.find((u) => u.id === ownerId)?.display_name ??
+      ownerId.slice(0, 8)
+    );
+  };
+  const perUserOf = (id: string) =>
+    stats.perUser.find((p) => p.id === id);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">
@@ -138,7 +186,9 @@ export default function AdminPage() {
               <li key={u.id} className="flex flex-col gap-3 rounded-2xl border border-thukha-lilac/40 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-bold">{u.display_name ?? u.id.slice(0, 8)}</p>
-                  <p className="text-sm text-thukha-indigo/70">{u.role} • Token: {balanceOf(u.id)}</p>
+                  <p className="text-sm text-thukha-indigo/70">
+                    {u.role} • Token: {balanceOf(u.id)} • ထုတ်ပြီး {perUserOf(u.id)?.generations ?? 0} ပုံ • ကုန်ပြီး {perUserOf(u.id)?.spent ?? 0} token
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -167,18 +217,56 @@ export default function AdminPage() {
       </section>
 
       <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-bold">Customer တစ်ယောက်ချင်းစီ — ဘာထုတ်ခဲ့လဲ၊ Token ဘယ်လောက်ကုန်လဲ</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70">
+          Token အများဆုံး ကုန်တဲ့သူ အရင်စီထားတယ်။ ထုတ်ပြီး ဆိုတာ ပုံအရေအတွက်၊
+          ကုန်ပြီး ဆိုတာ အဲဒီ user စုစုပေါင်း ကုန်ခဲ့တဲ့ token (နောက်ဆုံး 20 ပုံတင်မက၊
+          အားလုံးကို ပေါင်းထားတာ)။
+        </p>
+        {stats.perUser.length === 0 ? (
+          <p className="text-thukha-indigo/70">User မရှိသေးဘူး။</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {stats.perUser.map((p) => (
+              <li key={p.id} className="flex flex-col gap-1 rounded-2xl border border-thukha-lilac/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-bold">{p.display_name ?? p.id.slice(0, 8)}</p>
+                  <p className="text-sm text-thukha-indigo/70">{p.role}</p>
+                </div>
+                <p className="text-sm leading-6 text-thukha-indigo">
+                  ထုတ်ပြီး <b>{p.generations} ပုံ</b> • ကုန်ပြီး <b>{p.spent} token</b> •{" "}
+                  {p.role === "admin" ? "လက်ကျန် ∞ Unlimited" : `လက်ကျန် ${p.balance ?? "—"}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h2 className="text-xl font-bold">နောက်ဆုံး Generations</h2>
+        {deleteMessage && <p className="text-sm leading-6 text-thukha-indigo">{deleteMessage}</p>}
         {stats.generations.length === 0 ? (
           <p className="text-thukha-indigo/70">Generation မရှိသေးဘူး။</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {stats.generations.map((g) => (
-              <li key={g.id} className="rounded-2xl border border-thukha-lilac/40 p-4">
-                <p className="leading-7">{g.prompt}</p>
-                <p className="text-sm text-thukha-indigo/70">
-                  {g.model} • {g.format ?? ""} • {g.cost_tokens} token •{" "}
-                  {new Date(g.created_at).toLocaleDateString()}
-                </p>
+              <li key={g.id} className="flex flex-col gap-3 rounded-2xl border border-thukha-lilac/40 p-4">
+                <div>
+                  <p className="leading-7">{g.prompt}</p>
+                  <p className="text-sm font-bold text-thukha-violet">ထုတ်သူ: {nameOf(g.owner_id)}</p>
+                  <p className="text-sm text-thukha-indigo/70">
+                    {g.model} • {g.format ?? ""} • {g.cost_tokens} token •{" "}
+                    {new Date(g.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteGeneration(g.id)}
+                  className="min-h-[44px] w-fit rounded-full border border-red-300 px-4 py-2 text-sm font-bold text-red-700"
+                >
+                  ဖျက်ပါ
+                </button>
               </li>
             ))}
           </ul>
