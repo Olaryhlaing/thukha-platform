@@ -181,6 +181,20 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
 - `/signup` မှာ signup လုပ်ပြီး `/login` မှာ login လုပ်ရင် header မှာ email ပေါ်ပြီး
   /create မှာ **Server (login)** လို့ ပြမယ်။ Supabase Auth မှာ Confirm email ON
   ထားရင် email confirm လုပ်ပြီးမှ login ရမယ် (dev မှာ OFF လုပ်ထားလို့ရတယ်)။
+- **Email confirmation သေချာလုပ်ဖို့ (Supabase ဘက်မှာ ၃ ခု စစ်ပါ):**
+  1. **Authentication → Sign In / Providers → Email** မှာ Email ON နဲ့
+     **Confirm email ON** ဖြစ်နေရမယ် (OFF ဆိုရင် confirm email ပို့မှာ မဟုတ်ဘူး၊
+     signup ပြီးတာနဲ့ /create ကို တိုက်ရိုက် သွားမယ်)။
+  2. **Authentication → URL Configuration → Site URL** ကို live domain အတိအကျ
+     ထားပါ (ဥပမာ `https://thukha-platform.vercel.app` — localhost မဟုတ်ဘူး)။
+  3. **Redirect URLs** မှာ ဒီ ၂ ခုလုံး ထည့်ပါ:
+     `https://thukha-platform.vercel.app/auth/confirm` နဲ့
+     `http://localhost:3000/auth/confirm` (local စမ်းဖို့)။
+     Signup က emailRedirectTo ကို `/auth/confirm` အတိအကျ ပို့ထားလို့၊
+     ဒီ URL တွေ မရှိရင် Supabase က link ကို ပိတ်ထားနိုင်တယ်။
+     Confirm link ကို နှိပ်ရင် `/auth/confirm` က code / hash နှစ်မျိုးလုံးကို
+     ကိုင်ပြီး session ရရင် `/create` ကို သွားမယ်၊ link ကုန်သွားရင်
+     Signup ကနေ **Confirm email ပြန်ပို့ပါ** နဲ့ ပြန်ပို့လို့ရတယ်။
 - `/brands` မှာ Brand ထည့်လို့ရပြီး၊ `/designs` မှာ /create ကနေ သိမ်းထားတဲ့
   Design တွေ ပေါ်မယ်။
 - **Admin (role ခွဲခြားမှု — သေချာ):** Admin account နဲ့ Customer account ကို

@@ -15,10 +15,23 @@ export async function GET(request: Request) {
   if (!user || !service) {
     return NextResponse.json({ mode: "guest" as const });
   }
-  await service.from("profiles").upsert(
-    { id: user.id, display_name: user.email?.split("@")[0] ?? null },
-    { onConflict: "id" },
-  );
+  // Preserve an existing display_name (e.g. the name typed at
+  // signup) — the old upsert overwrote it with the email prefix
+  // on every API call.
+  const { data: existingProfile } = await service
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+  if (!existingProfile) {
+    await service.from("profiles").insert({
+      id: user.id,
+      display_name:
+        (user.user_metadata?.display_name as string | undefined) ??
+        user.email?.split("@")[0] ??
+        null,
+    });
+  }
   const { data } = await service
     .from("token_balances")
     .select("balance")
