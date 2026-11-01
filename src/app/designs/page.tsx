@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Design = {
   id: string;
@@ -25,6 +26,7 @@ function readGuestDesigns(): Design[] {
 }
 
 export default function DesignsPage() {
+  const { t } = useLanguage();
   const [designs, setDesigns] = useState<Design[]>(() => {
     if (typeof window === "undefined" || getSupabase()) return [];
     return readGuestDesigns();
@@ -68,39 +70,38 @@ export default function DesignsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">
       <h1 className="text-3xl font-bold">My Designs</h1>
-      <p className="leading-7 text-thukha-indigo/70">
+      <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
         {loggedIn
-          ? "Login ထားတယ် — Designs တွေကို Supabase ထဲ သိမ်းထားတယ်။"
-          : "Guest အနေနဲ့ သုံးနေတယ် — Designs တွေကို ဒီ browser ထဲမှာပဲ သိမ်းထားတယ်။"}
+          ? t("designs.loggedIn")
+          : t("designs.guest")}
         <br />
-        ပုံ file ကိုယ်တိုင်ကို ဒီမှာ မသိမ်းထားဘူး — prompt / channel / format ပဲ
-        သိမ်းထားပြီး ပြန်ဖန်တီးပါ နဲ့ /create မှာ ပြန်ထုတ်လို့ရတယ်။
+        {t("designs.note")}
       </p>
       {designs.length === 0 ? (
         <div className="flex flex-col gap-3">
-          <p className="leading-7 text-thukha-indigo/70">
-            Design မရှိသေးဘူး။ /create မှာ ပုံထုတ်ပြီးရင် Design သိမ်းပါ နှိပ်ပါ။
+          <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
+            {t("designs.empty")}
           </p>
-          <Link href="/create" className="font-bold text-thukha-violet">/create ကို သွားပါ →</Link>
+          <Link href="/create" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToCreate")}</Link>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
           {designs.map((d) => (
             <li key={d.id} className="flex flex-col gap-3 rounded-2xl border border-thukha-lilac/40 p-4">
               <p className="leading-7">{d.prompt}</p>
-              <p className="text-sm text-thukha-indigo/70">
+              <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
                 {d.channel ?? ""} • {d.format ?? ""}
                 {d.created_at ? ` • ${new Date(d.created_at).toLocaleDateString()}` : ""}
               </p>
               <div className="flex gap-2">
                 <Link
                   href={`/create?prompt=${encodeURIComponent(d.prompt)}&channel=${encodeURIComponent(d.channel ?? "Facebook post")}`}
-                  className="min-h-[44px] flex items-center rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet"
+                  className="min-h-[44px] flex items-center rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
                 >
-                  ပြန်ဖန်တီးပါ
+                  {t("designs.recreate")}
                 </Link>
-                <button type="button" onClick={() => deleteDesign(d.id)} className="min-h-[44px] rounded-full bg-amber-100 px-4 py-1 text-sm font-bold text-amber-900">
-                  ဖျက်ပါ
+                <button type="button" onClick={() => deleteDesign(d.id)} className="min-h-[44px] rounded-full bg-amber-100 dark:bg-amber-900 px-4 py-1 text-sm font-bold text-amber-900 dark:text-amber-100">
+                  {t("common.delete")}
                 </button>
               </div>
             </li>

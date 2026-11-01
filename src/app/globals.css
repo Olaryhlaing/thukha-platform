@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Dark mode: Tailwind v4 has no built-in .dark variant — this
+   custom variant makes every `dark:` utility in the app respond
+   to a `dark` class on <html>, set by ThemeToggle (saved in
+   localStorage) and by the no-flash script in layout.tsx. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ThuKha Platform — fresh build, Brand Guideline 2026–2027
    Violet #5946ED and Lilac #A78BFA mostly.
    Indigo #10113D is for dark text/contrast only. */
@@ -18,6 +24,13 @@
 :root {
   --background: #ffffff;
   --foreground: #10113d;
+}
+
+/* Dark surfaces: Midnight Indigo background, Cloud Mist text —
+   the brand's own dark colours, so dark mode still looks ThuKha. */
+.dark {
+  --background: #10113d;
+  --foreground: #f6f7fb;
 }
 
 body {

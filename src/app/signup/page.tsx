@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import PlatformAbout from "@/components/PlatformAbout";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const inputClass =
-  "w-full rounded-xl border border-thukha-lilac/50 bg-white px-3 py-3 text-base text-thukha-indigo outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
+  "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
 
 /* Signup, X-Panda-style careful, but adapted for ThuKha (a public
    SaaS, not a private team): X-Panda needs a full name, a password
@@ -21,6 +22,7 @@ const inputClass =
    Supabase, signUp returns a session at once and goes to /create. */
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,13 +38,11 @@ export default function SignupPage() {
       <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
         <PlatformAbout />
         <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold">Signup</h1>
-        <p className="leading-7 text-thukha-indigo/70">
-          Supabase မချိတ်သေးပါ — .env.local (ဒါမှမဟုတ် Vercel Env) မှာ
-          NEXT_PUBLIC_SUPABASE_URL နဲ့ NEXT_PUBLIC_SUPABASE_ANON_KEY ထည့်ပြီးမှ
-          signup လုပ်လို့ရမယ်။
+        <h1 className="text-3xl font-bold">{t("signup.title")}</h1>
+        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
+          {t("common.supabaseEnvNote")} {t("signup.notConnectedNote")}
         </p>
-        <Link href="/create" className="font-bold text-thukha-violet">/create ကို သွားပါ →</Link>
+        <Link href="/create" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToCreate")}</Link>
         </div>
       </main>
     );
@@ -50,19 +50,19 @@ export default function SignupPage() {
 
   async function signup() {
     if (!name.trim()) {
-      setError("အမည် ရေးပေးပါ။");
+      setError(t("signup.errName"));
       return;
     }
     if (!email.trim()) {
-      setError("Email ရေးပေးပါ။");
+      setError(t("signup.errEmail"));
       return;
     }
     if (password.length < 8) {
-      setError("Password အနည်းဆုံး ၈ လုံး ရေးပေးပါ။");
+      setError(t("signup.errPasswordMin"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Password ၂ ခု မတူဘူး။ သေချာ စစ်ပြီး ထပ်ရေးပေးပါ။");
+      setError(t("signup.errPasswordMatch"));
       return;
     }
     setLoading(true);
@@ -84,15 +84,15 @@ export default function SignupPage() {
     if (err) {
       const msg = (err.message ?? "").toLowerCase();
       if (msg.includes("already") || msg.includes("registered")) {
-        setError("ဒီ email နဲ့ account ရှိနေပြီ။ Signup ထပ်လုပ်စရာ မလိုဘူး — Login လုပ်ပါ။");
+        setError(t("signup.errExists"));
       } else if (msg.includes("password")) {
-        setError("Password အားနည်းနေတယ်။ အနည်းဆုံး ၈ လုံး၊ စာလုံး + ဂဏန်း ပါအောင် ရေးပေးပါ။");
+        setError(t("signup.errWeak"));
       } else if (msg.includes("sign up") || msg.includes("signup") || msg.includes("not allowed")) {
-        setError("Supabase မှာ signup ပိတ်ထားတယ်။ Authentication → Sign In / Providers မှာ Email နဲ့ Allow new users to sign up ကို စစ်ပါ။");
+        setError(t("signup.errDisabled"));
       } else if (msg.includes("email")) {
-        setError("Email ပုံစံ မမှန်ပါ။ email အတိအကျ ရေးပြီး ထပ်ကြိုးစားပါ။");
+        setError(t("signup.errInvalidEmail"));
       } else {
-        setError("Signup မအောင်ပါ။ Email စစ်ပြီး ထပ်ကြိုးစားပါ။");
+        setError(t("signup.errGeneric"));
       }
       return;
     }
@@ -118,9 +118,9 @@ export default function SignupPage() {
     });
     setResending(false);
     if (err) {
-      setError("Confirm email ပြန်ပို့လို့ မရပါ။ ခဏစောင့်ပြီး ထပ်ကြိုးစားပါ။");
+      setError(t("signup.errResend"));
     } else {
-      setMessage("Confirm email ကို ပြန်ပို့ပြီးပြီ။ Inbox (နဲ့ Spam / Junk) ကို စစ်ပါ။");
+      setMessage(t("signup.msgResent"));
     }
   }
 
@@ -128,56 +128,55 @@ export default function SignupPage() {
     <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
       <PlatformAbout />
       <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-bold">Signup</h1>
-      <p className="text-sm leading-6 text-thukha-indigo/70">
-        Signup ပြီးရင် token 100 နဲ့ စမယ်။ Token က account နဲ့ ချိတ်ထားတယ်။
+      <h1 className="text-3xl font-bold">{t("signup.title")}</h1>
+      <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+        {t("signup.tokenNote")}
       </p>
       {pending ? (
-        <div className="flex flex-col gap-4 rounded-2xl bg-amber-50 p-6 ring-1 ring-amber-300">
-          <h2 className="text-lg font-bold text-amber-900">Signup အောင်ပြီ — Email ကို အတည်ပြုပါ</h2>
-          <p className="text-sm leading-6 text-amber-900">
-            <b>{email}</b> ကို confirm email ပို့ပြီးပြီ။ Login မလုပ်ခင် အဲဒီ
-            email ထဲက link ကို နှိပ်ရမယ်။
+        <div className="flex flex-col gap-4 rounded-2xl bg-amber-50 dark:bg-amber-950 p-6 ring-1 ring-amber-300 dark:ring-amber-800">
+          <h2 className="text-lg font-bold text-amber-900 dark:text-amber-100">{t("signup.pendingTitle")}</h2>
+          <p className="text-sm leading-6 text-amber-900 dark:text-amber-100">
+            <b>{email}</b> {t("signup.pendingText")}
           </p>
-          <ol className="flex flex-col gap-2 text-sm leading-6 text-amber-900">
-            <li>၁။ Inbox ကို ဖွင့်ပါ — email မတွေ့ရင် <b>Spam / Junk</b> ကို စစ်ပါ။</li>
-            <li>၂။ Email ထဲက <b>Confirm</b> link ကို နှိပ်ပါ — /auth/confirm ကို ရောက်ပြီး /create ကို အလိုလို သွားမယ်။</li>
-            <li>၃။ Link သက်တမ်း ကုန်သွားရင် (expired) အောက်က ခလုတ်နဲ့ ပြန်ပို့ပါ။</li>
+          <ol className="flex flex-col gap-2 text-sm leading-6 text-amber-900 dark:text-amber-100">
+            <li>{t("signup.pendingStep1")}</li>
+            <li>{t("signup.pendingStep2")}</li>
+            <li>{t("signup.pendingStep3")}</li>
           </ol>
-          {error && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-300">{error}</p>}
-          {message && <p className="rounded-xl bg-teal-50 p-4 text-sm leading-6 text-teal-900 ring-1 ring-teal-300">{message}</p>}
+          {error && <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">{error}</p>}
+          {message && <p className="rounded-xl bg-teal-50 dark:bg-teal-950 p-4 text-sm leading-6 text-teal-900 dark:text-teal-100 ring-1 ring-teal-300 dark:ring-teal-800">{message}</p>}
           <button type="button" onClick={resend} disabled={resending} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white disabled:opacity-50">
-            {resending ? "ပို့နေပါတယ်…" : "Confirm email ပြန်ပို့ပါ"}
+            {resending ? t("signup.resending") : t("signup.resend")}
           </button>
-          <p className="text-sm text-thukha-indigo/70">
-            Confirm ပြီးရင် <Link href="/login" className="font-bold text-thukha-violet">Login လုပ်ပါ</Link>
+          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+            {t("signup.afterConfirm")} <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.loginLink")}</Link>
           </p>
         </div>
       ) : (
         <>
-          <label className="text-sm font-bold text-thukha-indigo">
-            အမည်
+          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("signup.name")}
             <input value={name} onChange={(e) => setName(e.target.value)} type="text" className={`${inputClass} mt-1`} />
           </label>
-          <label className="text-sm font-bold text-thukha-indigo">
+          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
             Email
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={`${inputClass} mt-1`} />
           </label>
-          <label className="text-sm font-bold text-thukha-indigo">
-            Password (အနည်းဆုံး ၈ လုံး)
+          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("signup.passwordMin")}
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className={`${inputClass} mt-1`} />
           </label>
-          <label className="text-sm font-bold text-thukha-indigo">
-            Password ထပ်ရေးပါ
+          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("signup.passwordAgain")}
             <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type="password" className={`${inputClass} mt-1`} />
           </label>
-          {error && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-300">{error}</p>}
-          {message && <p className="rounded-xl bg-teal-50 p-4 text-sm leading-6 text-teal-900 ring-1 ring-teal-300">{message}</p>}
+          {error && <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">{error}</p>}
+          {message && <p className="rounded-xl bg-teal-50 dark:bg-teal-950 p-4 text-sm leading-6 text-teal-900 dark:text-teal-100 ring-1 ring-teal-300 dark:ring-teal-800">{message}</p>}
           <button type="button" onClick={signup} disabled={loading} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white disabled:opacity-50">
-            {loading ? "Signup လုပ်နေပါတယ်…" : "Signup"}
+            {loading ? t("signup.loading") : t("signup.title")}
           </button>
-          <p className="text-sm text-thukha-indigo/70">
-            Account ရှိပြီးရင် <Link href="/login" className="font-bold text-thukha-violet">Login လုပ်ပါ</Link>
+          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+            {t("signup.hasAccount")} <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.loginLink")}</Link>
           </p>
         </>
       )}

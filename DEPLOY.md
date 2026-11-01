@@ -195,6 +195,11 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
      Confirm link ကို နှိပ်ရင် `/auth/confirm` က code / hash နှစ်မျိုးလုံးကို
      ကိုင်ပြီး session ရရင် `/create` ကို သွားမယ်၊ link ကုန်သွားရင်
      Signup ကနေ **Confirm email ပြန်ပို့ပါ** နဲ့ ပြန်ပို့လို့ရတယ်။
+- **ဘာသာစကား (Language) — header မှာ English / မြန်မာ ခလုတ်:**
+  ခလုတ်နှိပ်လိုက်ရင် app တစ်ခုလုံး မြန်မာ ↔ English ပြောင်းမယ်၊ ရွေးထားတာ
+  browser ထဲ (thukha-lang) သိမ်းထားလို့ ပြန်ဖွင့်ရင်လည်း အဲဒီဘာသာပဲ ပေါ်မယ်။
+  Default က မြန်မာ။ Promo စာနမူနာတွေနဲ့ လုပ်ငန်းအမျိုးအစား value တွေကတော့
+  မြန်မာ content အတိုင်း ကျန်တယ် (အဲဒါက customer ဖန်တီးတဲ့ promo စာကိုယ်တိုင်)။
 - **PWA install စမ်းပုံ (live HTTPS မှာပဲ ရမယ်):**
   Android/PC Chrome မှာ live site ဖွင့်ပြီး menu → **Install app / Add to Home screen**
   (သို့) address bar က install icon ကို နှိပ်ပါ — ThuKha robot icon နဲ့

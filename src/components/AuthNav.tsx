@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /* Header auth state + role separation. Guest (no Supabase env, or
    not logged in) sees Login / Signup links; a logged-in customer
@@ -13,6 +14,7 @@ import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
    already returned 403 for customers. Session lives in the browser
    via supabase-js. */
 export default function AuthNav() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   // No Supabase env => nothing to load, so start loaded.
@@ -54,31 +56,23 @@ export default function AuthNav() {
   if (!loaded) return null;
   if (!supabaseConfigured()) {
     return (
-      <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet">
-        Login
-      </Link>
+      <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
     );
   }
   if (!email) {
     return (
       <>
-        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet">
-          Login
-        </Link>
-        <Link href="/signup" className="min-h-[44px] flex items-center text-thukha-violet">
-          Signup
-        </Link>
+        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
+        <Link href="/signup" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.signup")}</Link>
       </>
     );
   }
   return (
     <>
       {isAdmin && (
-        <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet">
-          Admin
-        </Link>
+        <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.admin")}</Link>
       )}
-      <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70">
+      <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70 dark:text-white/70">
         {email}
       </span>
       <button
@@ -88,10 +82,8 @@ export default function AuthNav() {
           setEmail(null);
           setIsAdmin(false);
         }}
-        className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet"
-      >
-        Logout
-      </button>
+        className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
+      >{t("nav.logout")}</button>
     </>
   );
 }

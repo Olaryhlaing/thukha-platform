@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
+import { serverErrorText } from "@/lib/i18n";
 import { BUSINESS_TYPES_FALLBACK } from "@/lib/brands";
 
 type Brand = { id: string; name: string; business_type: string | null };
 
 const inputClass =
-  "w-full rounded-xl border border-thukha-lilac/50 bg-white px-3 py-3 text-base text-thukha-indigo outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
+  "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
 
 /* Brands are real now: logged-in customers save to Supabase, guests
    save to this browser (localStorage "thukha-brands"). Deleting
@@ -22,6 +24,7 @@ function readGuestBrands(): Brand[] {
 }
 
 export default function BrandsPage() {
+  const { t, lang } = useLanguage();
   const [brands, setBrands] = useState<Brand[]>(() => {
     // Guest brands load lazily (no effect needed); logged-in brands
     // load from Supabase in the effect below.
@@ -50,7 +53,7 @@ export default function BrandsPage() {
 
   async function addBrand() {
     if (!name.trim()) {
-      setError("Brand အမည် ရေးပေးပါ။");
+      setError(t("brands.errName"));
       return;
     }
     setError("");
@@ -64,7 +67,7 @@ export default function BrandsPage() {
       });
       const json = (await res.json()) as { brand?: Brand; error?: string };
       if (!res.ok || !json.brand) {
-        setError(json.error ?? "Brand သိမ်းလို့ မရပါ။");
+        setError(serverErrorText(lang, json.error) ?? t("brands.errSave"));
         return;
       }
       setBrands((prev) => [json.brand as Brand, ...prev]);
@@ -94,7 +97,7 @@ export default function BrandsPage() {
       });
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(json.error ?? "Brand ဖျက်လို့ မရပါ။");
+        setError(serverErrorText(lang, json.error) ?? t("brands.errDelete"));
         return;
       }
     } else {
@@ -107,48 +110,48 @@ export default function BrandsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">
       <h1 className="text-3xl font-bold">My Brands</h1>
-      <p className="leading-7 text-thukha-indigo/70">
+      <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
         {loggedIn
-          ? "Login ထားတယ် — Brands တွေကို Supabase ထဲ သိမ်းထားတယ်။"
-          : "Guest အနေနဲ့ သုံးနေတယ် — Brands တွေကို ဒီ browser ထဲမှာပဲ သိမ်းထားတယ်။ Login လုပ်ရင် Supabase ထဲ သိမ်းမယ်။"}
+          ? t("brands.loggedIn")
+          : t("brands.guest")}
       </p>
-      <section className="flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white p-4 shadow-sm">
-        <label className="text-sm font-bold text-thukha-indigo">
-          Brand အမည်
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ဥပမာ — Yangon Kitchen" className={`${inputClass} mt-1`} />
+      <section className="flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white dark:bg-[#1b1c48] p-4 shadow-sm">
+        <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+          {t("brands.name")}
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("brands.namePlaceholder")} className={`${inputClass} mt-1`} />
         </label>
-        <label className="text-sm font-bold text-thukha-indigo">
-          လုပ်ငန်းအမျိုးအစား
+        <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+          {t("brands.type")}
           <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className={`${inputClass} mt-1`}>
-            {BUSINESS_TYPES_FALLBACK.map((t) => (
-              <option key={t}>{t}</option>
+            {BUSINESS_TYPES_FALLBACK.map((bt) => (
+              <option key={bt} value={bt}>{lang === "en" ? ({"စားသောက်ဆိုင်": "Restaurant", "Online shop": "Online shop", "အလှအပ": "Beauty", "ဝန်ဆောင်မှု": "Service", Agency: "Agency", "အခြား": "Other"}[bt] ?? bt) : bt}</option>
             ))}
           </select>
         </label>
-        {error && <p className="text-sm text-amber-900">{error}</p>}
+        {error && <p className="text-sm text-amber-900 dark:text-amber-100">{error}</p>}
         <button type="button" onClick={addBrand} className="min-h-[44px] w-fit rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
-          Brand ထည့်ပါ
+          {t("brands.add")}
         </button>
       </section>
       {brands.length === 0 ? (
-        <p className="leading-7 text-thukha-indigo/70">Brand မရှိသေးဘူး။ အပေါ်ကနေ ထည့်ပါ။</p>
+        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">{t("brands.empty")}</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {brands.map((b) => (
             <li key={b.id} className="flex items-center justify-between gap-3 rounded-2xl border border-thukha-lilac/40 p-4">
               <div>
                 <p className="font-bold">{b.name}</p>
-                <p className="text-sm text-thukha-indigo/70">{b.business_type ?? ""}</p>
+                <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{b.business_type ?? ""}</p>
               </div>
               <div className="flex gap-2">
                 <Link
                   href={`/create?brand=${encodeURIComponent(b.name)}&type=${encodeURIComponent(b.business_type ?? "")}`}
-                  className="min-h-[44px] flex items-center rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet"
+                  className="min-h-[44px] flex items-center rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
                 >
-                  ဒီ Brand နဲ့ ဖန်တီးပါ
+                  {t("common.createWithBrand")}
                 </Link>
-                <button type="button" onClick={() => deleteBrand(b.id)} className="min-h-[44px] rounded-full bg-amber-100 px-4 py-1 text-sm font-bold text-amber-900">
-                  ဖျက်ပါ
+                <button type="button" onClick={() => deleteBrand(b.id)} className="min-h-[44px] rounded-full bg-amber-100 dark:bg-amber-900 px-4 py-1 text-sm font-bold text-amber-900 dark:text-amber-100">
+                  {t("common.delete")}
                 </button>
               </div>
             </li>

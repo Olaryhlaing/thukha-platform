@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /* Home (/) now starts as the login page: a visitor is sent to
    /login, and a logged-in user is sent straight to their work —
@@ -13,6 +14,7 @@ import { getSupabase } from "@/lib/supabase/client";
    Create stays reachable from the header. */
 export default function Home() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -40,8 +42,8 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-10">
-      <p className="text-sm leading-6 text-thukha-indigo/70">
-        ThuKha Platform ကို ဖွင့်နေပါတယ်…
+      <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+        {t("nav.opening")}
       </p>
     </main>
   );

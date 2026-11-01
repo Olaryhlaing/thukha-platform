@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Myanmar } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
 import PwaRegister from "@/components/PwaRegister";
+import LanguageProvider from "@/components/LanguageProvider";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -45,13 +46,26 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="my"
       className={`${inter.variable} ${myanmar.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-thukha-indigo">
+      <body className="min-h-full flex flex-col bg-white dark:bg-[#1b1c48] text-thukha-indigo dark:text-[#f6f7fb]">
+        {/* No-flash theme + language script: apply the saved (or
+            device) theme and the saved language before first
+            paint, so the page never flashes light and then flips
+            to dark, or renders in the wrong language. Same keys
+            as ThemeToggle ("thukha-theme") and LanguageProvider
+            ("thukha-lang"). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('thukha-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}var l=localStorage.getItem('thukha-lang');document.documentElement.lang=(l==='en'?'en':'my')}catch(e){}})();`,
+          }}
+        />
         <PwaRegister />
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <footer className="border-t border-thukha-lilac/30 py-6 text-center text-sm text-thukha-indigo/60">
-          ThuKha Platform
-        </footer>
+        <LanguageProvider>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">{children}</div>
+          <footer className="border-t border-thukha-lilac/30 py-6 text-center text-sm text-thukha-indigo/60 dark:text-white/60">
+            ThuKha Platform
+          </footer>
+        </LanguageProvider>
       </body>
     </html>
   );

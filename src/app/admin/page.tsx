@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
+import { serverErrorText } from "@/lib/i18n";
 
 type Stats = {
   users: { id: string; display_name: string | null; role: string; created_at: string }[];
@@ -16,9 +18,10 @@ type Stats = {
    generations. Admin-only — the API returns 403 for customers, and
    this page shows that message instead of any data. */
 export default function AdminPage() {
+  const { t, lang } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState(() =>
-    supabaseConfigured() ? "" : "Supabase မချိတ်သေးပါ။",
+    supabaseConfigured() ? "" : t("common.supabaseNotConnected"),
   );
   const [refillAmounts, setRefillAmounts] = useState<Record<string, string>>({});
   const [refillMessage, setRefillMessage] = useState("");
@@ -30,7 +33,7 @@ export default function AdminPage() {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) {
-      setError("Login လုပ်ပြီးမှ ကြည့်လို့ရမယ်။");
+      setError(t("admin.errLoginFirst"));
       return;
     }
     const res = await fetch("/api/admin/stats", {
@@ -38,7 +41,7 @@ export default function AdminPage() {
     });
     const json = (await res.json()) as Stats & { error?: string };
     if (!res.ok) {
-      setError(json.error ?? "Admin data ဖတ်လို့ မရပါ။");
+      setError(serverErrorText(lang, json.error) ?? t("admin.errRead"));
       return;
     }
     setStats(json);
@@ -55,13 +58,13 @@ export default function AdminPage() {
   async function refill(userId: string) {
     const amount = Math.floor(Number(refillAmounts[userId] ?? 100));
     if (!Number.isFinite(amount) || amount < 1 || amount > 10000) {
-      setRefillMessage("Amount က 1 ကနေ 10000 အတွင်း ဖြစ်ရမယ်။");
+      setRefillMessage(t("admin.errAmount"));
       return;
     }
     const supabase = getSupabase();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     if (!token) {
-      setRefillMessage("Admin login လုပ်ပြီးမှ ဖြည့်လို့ရမယ်။");
+      setRefillMessage(t("admin.errRefillLogin"));
       return;
     }
     const res = await fetch("/api/admin/tokens", {
@@ -71,7 +74,7 @@ export default function AdminPage() {
     });
     const json = (await res.json()) as { balance?: number; error?: string };
     if (!res.ok || typeof json.balance !== "number") {
-      setRefillMessage(json.error ?? "Token ဖြည့်လို့ မရပါ။");
+      setRefillMessage(serverErrorText(lang, json.error) ?? t("admin.errRefill"));
       return;
     }
     setStats((prev) =>
@@ -85,17 +88,17 @@ export default function AdminPage() {
           }
         : prev,
     );
-    setRefillMessage(`Token ${amount} ဖြည့်ပြီးပြီ။ လက်ကျန် ${json.balance} ဖြစ်သွားပြီ။`);
+    setRefillMessage(t("admin.refillDone", { amount, balance: json.balance }));
   }
 
   async function deleteGeneration(id: string) {
-    if (!window.confirm("ဒီ generation ကို တကယ် ဖျက်မလား? ပြန်ယူလို့ မရဘူး။ (Token ပြန်အမ်းမှာ မဟုတ်ဘူး — log ပဲ ဖျက်မှာ။)")) {
+    if (!window.confirm(t("admin.deleteConfirm"))) {
       return;
     }
     const supabase = getSupabase();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     if (!token) {
-      setDeleteMessage("Login လုပ်ပြီးမှ ဖျက်လို့ရမယ်။");
+      setDeleteMessage(t("admin.errDeleteLogin"));
       return;
     }
     const res = await fetch("/api/admin/generations", {
@@ -105,7 +108,7 @@ export default function AdminPage() {
     });
     const json = (await res.json()) as { error?: string };
     if (!res.ok) {
-      setDeleteMessage(json.error ?? "Generation ဖျက်လို့ မရပါ။");
+      setDeleteMessage(serverErrorText(lang, json.error) ?? t("admin.errDelete"));
       return;
     }
     // Remove locally only on server ok, and keep the count honest.
@@ -118,15 +121,15 @@ export default function AdminPage() {
           }
         : prev,
     );
-    setDeleteMessage("Generation ဖျက်ပြီးပြီ။");
+    setDeleteMessage(t("admin.deleteDone"));
   }
 
   if (error) {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-10">
         <h1 className="text-3xl font-bold">Admin</h1>
-        <p className="leading-7 text-amber-900">{error}</p>
-        <Link href="/login" className="font-bold text-thukha-violet">Login ကို သွားပါ →</Link>
+        <p className="leading-7 text-amber-900 dark:text-amber-100">{error}</p>
+        <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToLogin")}</Link>
       </main>
     );
   }
@@ -134,7 +137,7 @@ export default function AdminPage() {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-10">
         <h1 className="text-3xl font-bold">Admin</h1>
-        <p>ဖတ်နေပါတယ်…</p>
+        <p>{t("common.loading")}</p>
       </main>
     );
   }
@@ -156,38 +159,37 @@ export default function AdminPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-10">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ["Users", stats.counts.users],
-          ["Brands", stats.counts.brands],
-          ["Designs", stats.counts.designs],
-          ["Generations", stats.counts.generations],
+          [t("admin.users"), stats.counts.users],
+          [t("admin.brands"), stats.counts.brands],
+          [t("admin.designs"), stats.counts.designs],
+          [t("admin.generations"), stats.counts.generations],
         ].map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-thukha-lilac/40 p-4 text-center">
             <p className="text-2xl font-bold">{value}</p>
-            <p className="text-sm text-thukha-indigo/70">{label}</p>
+            <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{label}</p>
           </div>
         ))}
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-bold">Users + Token</h2>
-        <p className="text-sm leading-6 text-thukha-indigo/70">
-          Prototype အနေနဲ့ admin က user တစ်ယောက်ချင်းစီကို token ပြန်ဖြည့်ပေးလို့ရတယ်။
-          အစစ်မထုတ်ခင် ဒါကို ငွေချေမှုနဲ့ အစားထိုးရမယ်။
+        <h2 className="text-xl font-bold">{t("admin.usersToken")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("admin.refillNote")}
         </p>
-        {refillMessage && <p className="text-sm leading-6 text-thukha-indigo">{refillMessage}</p>}
+        {refillMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{refillMessage}</p>}
         {stats.users.length === 0 ? (
-          <p className="text-thukha-indigo/70">User မရှိသေးဘူး။</p>
+          <p className="text-thukha-indigo/70 dark:text-white/70">{t("admin.noUsers")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {stats.users.map((u) => (
               <li key={u.id} className="flex flex-col gap-3 rounded-2xl border border-thukha-lilac/40 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-bold">{u.display_name ?? u.id.slice(0, 8)}</p>
-                  <p className="text-sm text-thukha-indigo/70">
-                    {u.role} • Token: {balanceOf(u.id)} • ထုတ်ပြီး {perUserOf(u.id)?.generations ?? 0} ပုံ • ကုန်ပြီး {perUserOf(u.id)?.spent ?? 0} token
+                  <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+                    {u.role} • Token: {balanceOf(u.id)} • {t("admin.generated")} {perUserOf(u.id)?.generations ?? 0} {t("admin.images")} • {t("admin.spent")} {perUserOf(u.id)?.spent ?? 0} {t("admin.tokenUnit")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -199,15 +201,15 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setRefillAmounts((prev) => ({ ...prev, [u.id]: e.target.value }))
                     }
-                    aria-label="ဖြည့်မယ့် token ပမာဏ"
-                    className="w-24 rounded-xl border border-thukha-lilac/50 px-3 py-2 text-base text-thukha-indigo outline-none focus:border-thukha-violet"
+                    aria-label={t("admin.refillAmountLabel")}
+                    className="w-24 rounded-xl border border-thukha-lilac/50 px-3 py-2 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet"
                   />
                   <button
                     type="button"
                     onClick={() => refill(u.id)}
                     className="min-h-[44px] rounded-full bg-thukha-violet px-4 py-2 text-sm font-bold text-white"
                   >
-                    Token ဖြည့်ပါ
+                    {t("admin.refill")}
                   </button>
                 </div>
               </li>
@@ -217,25 +219,23 @@ export default function AdminPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-bold">Customer တစ်ယောက်ချင်းစီ — ဘာထုတ်ခဲ့လဲ၊ Token ဘယ်လောက်ကုန်လဲ</h2>
-        <p className="text-sm leading-6 text-thukha-indigo/70">
-          Token အများဆုံး ကုန်တဲ့သူ အရင်စီထားတယ်။ ထုတ်ပြီး ဆိုတာ ပုံအရေအတွက်၊
-          ကုန်ပြီး ဆိုတာ အဲဒီ user စုစုပေါင်း ကုန်ခဲ့တဲ့ token (နောက်ဆုံး 20 ပုံတင်မက၊
-          အားလုံးကို ပေါင်းထားတာ)။
+        <h2 className="text-xl font-bold">{t("admin.perUserTitle")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("admin.perUserNote")}
         </p>
         {stats.perUser.length === 0 ? (
-          <p className="text-thukha-indigo/70">User မရှိသေးဘူး။</p>
+          <p className="text-thukha-indigo/70 dark:text-white/70">{t("admin.noUsers")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {stats.perUser.map((p) => (
               <li key={p.id} className="flex flex-col gap-1 rounded-2xl border border-thukha-lilac/40 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-bold">{p.display_name ?? p.id.slice(0, 8)}</p>
-                  <p className="text-sm text-thukha-indigo/70">{p.role}</p>
+                  <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{p.role}</p>
                 </div>
-                <p className="text-sm leading-6 text-thukha-indigo">
-                  ထုတ်ပြီး <b>{p.generations} ပုံ</b> • ကုန်ပြီး <b>{p.spent} token</b> •{" "}
-                  {p.role === "admin" ? "လက်ကျန် ∞ Unlimited" : `လက်ကျန် ${p.balance ?? "—"}`}
+                <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+                  {t("admin.generated")} <b>{p.generations} {t("admin.images")}</b> • {t("admin.spent")} <b>{p.spent} {t("admin.tokenUnit")}</b> •{" "}
+                  {p.role === "admin" ? t("admin.balanceUnlimited") : `${t("admin.balance")} ${p.balance ?? "—"}`}
                 </p>
               </li>
             ))}
@@ -244,18 +244,18 @@ export default function AdminPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-bold">နောက်ဆုံး Generations</h2>
-        {deleteMessage && <p className="text-sm leading-6 text-thukha-indigo">{deleteMessage}</p>}
+        <h2 className="text-xl font-bold">{t("admin.latestGenerations")}</h2>
+        {deleteMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{deleteMessage}</p>}
         {stats.generations.length === 0 ? (
-          <p className="text-thukha-indigo/70">Generation မရှိသေးဘူး။</p>
+          <p className="text-thukha-indigo/70 dark:text-white/70">{t("admin.noGenerations")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {stats.generations.map((g) => (
               <li key={g.id} className="flex flex-col gap-3 rounded-2xl border border-thukha-lilac/40 p-4">
                 <div>
                   <p className="leading-7">{g.prompt}</p>
-                  <p className="text-sm font-bold text-thukha-violet">ထုတ်သူ: {nameOf(g.owner_id)}</p>
-                  <p className="text-sm text-thukha-indigo/70">
+                  <p className="text-sm font-bold text-thukha-violet dark:text-thukha-lilac">{t("admin.generatedBy")} {nameOf(g.owner_id)}</p>
+                  <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
                     {g.model} • {g.format ?? ""} • {g.cost_tokens} token •{" "}
                     {new Date(g.created_at).toLocaleDateString()}
                   </p>
@@ -263,9 +263,9 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => deleteGeneration(g.id)}
-                  className="min-h-[44px] w-fit rounded-full border border-red-300 px-4 py-2 text-sm font-bold text-red-700"
+                  className="min-h-[44px] w-fit rounded-full border border-red-300 dark:border-red-700 px-4 py-2 text-sm font-bold text-red-700 dark:text-red-300"
                 >
-                  ဖျက်ပါ
+                  {t("common.delete")}
                 </button>
               </li>
             ))}

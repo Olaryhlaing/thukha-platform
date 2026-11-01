@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { START_TOKENS, tokenCost } from "@/lib/tokens";
 import { TEMPLATES } from "@/lib/templates";
 import { getSupabase } from "@/lib/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
+import { serverErrorText } from "@/lib/i18n";
 
 /*
  * ThuKha /create — minimal customer flow (2026-10-28), plus a
@@ -29,6 +31,23 @@ const BUSINESS_TYPES = [
 ];
 
 const GOALS = ["ရောင်းအား တိုးရန်", "Brand သိစေရန်", "Promotion ကြေညာရန်"];
+
+// Display labels for the select options. The option VALUE stays the
+// original Burmese string (templates, prompt examples and the API
+// match on it), only the shown label switches with the UI language.
+const BUSINESS_TYPE_LABELS_EN: Record<string, string> = {
+  "စားသောက်ဆိုင်": "Restaurant",
+  "Online shop": "Online shop",
+  "အလှအပ": "Beauty",
+  "ဝန်ဆောင်မှု": "Service",
+  Agency: "Agency",
+  "အခြား": "Other",
+};
+const GOAL_LABELS_EN: Record<string, string> = {
+  "ရောင်းအား တိုးရန်": "Increase sales",
+  "Brand သိစေရန်": "Raise brand awareness",
+  "Promotion ကြေညာရန်": "Announce a promotion",
+};
 
 const CHANNELS = [
   { id: "Facebook post", format: "1080x1080" },
@@ -124,10 +143,10 @@ const TEXT_EXAMPLES = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-thukha-lilac/50 bg-white px-3 py-3 text-base text-thukha-indigo outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
-const labelClass = "text-sm font-bold text-thukha-indigo";
+  "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
+const labelClass = "text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]";
 const sectionClass =
-  "flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white p-4 shadow-sm sm:p-5";
+  "flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white dark:bg-[#1b1c48] p-4 shadow-sm sm:p-5";
 
 export default function CreatePage() {
   return (
@@ -139,6 +158,7 @@ export default function CreatePage() {
 
 function CreatePageInner() {
   const searchParams = useSearchParams();
+  const { t, lang } = useLanguage();
   // Prefill from Templates / Brands / Designs links, from the URL
   // itself (no effect needed): ?template=<id>, ?brand=<name>&type=<t>,
   // ?prompt=<p>&channel=<c>. Template wins for type/channel/prompt
@@ -329,7 +349,7 @@ function CreatePageInner() {
     // is still empty — the API builds them from the overlay text.
     const overlayText = [overlayHeadline, overlaySub].map((t) => t.trim()).filter(Boolean).join(" — ");
     if (!aiPrompt.trim() && !overlayText) {
-      setAiError("အပေါ်မှာ စာ (ခေါင်းစဉ်) ဒါမှမဟုတ် prompt အကြမ်း တစ်ခု အရင် ရေးပေးပါ။");
+      setAiError(t("create.errNeedTextOrPrompt"));
       return;
     }
     setSuggestionsLoading(true);
@@ -349,12 +369,12 @@ function CreatePageInner() {
       });
       const data = (await res.json()) as { options?: string[]; error?: string };
       if (!res.ok || !data.options) {
-        setAiError(data.error ?? "Prompt suggestions ထုတ်လို့ မရသေးပါ။");
+        setAiError(serverErrorText(lang, data.error) ?? t("create.errSuggestionFailed"));
         return;
       }
       setPromptSuggestions(data.options);
     } catch {
-      setAiError("Prompt suggestions ထုတ်လို့ မရသေးပါ။ ထပ်ကြိုးစားပါ။");
+      setAiError(t("create.errSuggestionFailedRetry"));
     } finally {
       setSuggestionsLoading(false);
     }
@@ -363,7 +383,7 @@ function CreatePageInner() {
   function addReferenceImages(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, 3 - referenceImages.length);
     if (files.some((f) => f.size > 5_000_000)) {
-      setAiError("ပုံ ၅MB အောက်ပဲ ထည့်ပါ။");
+      setAiError(t("create.errImageTooBig"));
       return;
     }
     files.forEach((file) => {
@@ -376,13 +396,13 @@ function CreatePageInner() {
 
   async function generateAi() {
     if (!aiPrompt.trim()) {
-      setAiError("လိုချင်တဲ့ ပုံအကြောင်း ရေးပေးပါ။");
+      setAiError(t("create.errNeedPrompt"));
       return;
     }
     // Token check first: insufficient balance blocks generation, and
     // a failed generation never deducts (deduct only on success).
     if (effectiveTokens < cost) {
-      setAiError(`Token မလောက်ပါ။ ဒီပုံက ${cost} token ကုန်မယ်၊ ကျန်တာ ${effectiveTokens} ပဲ ရှိတယ်။`);
+      setAiError(t("create.errTokenNotEnough", { cost, balance: effectiveTokens }));
       return;
     }
     setAiLoading(true);
@@ -414,7 +434,7 @@ function CreatePageInner() {
         unlimited?: boolean;
       };
       if (!res.ok || !data.imageUrl) {
-        setAiError(data.error ?? "AI ပုံ ထုတ်လို့ မရသေးပါ။");
+        setAiError(serverErrorText(lang, data.error) ?? t("create.errGenerateFailed"));
         return;
       }
       if (data.unlimited) {
@@ -428,7 +448,7 @@ function CreatePageInner() {
       setAiImages((prev) => [data.imageUrl as string, ...prev].slice(0, 4));
       setSelected(data.imageUrl);
     } catch {
-      setAiError("AI ပုံ ထုတ်လို့ မရသေးပါ။ ထပ်ကြိုးစားပါ။");
+      setAiError(t("create.errGenerateFailedRetry"));
     } finally {
       setAiLoading(false);
     }
@@ -443,11 +463,11 @@ function CreatePageInner() {
   function downloadWithText() {
     if (!selected) return;
     if (isGuest) {
-      setOverlayMessage("Guest အနေနဲ့ Download လုပ်လို့ မရပါ — Login / Signup လုပ်ပြီးမှ Download ရမယ်။");
+      setOverlayMessage(t("create.errGuestDownload"));
       return;
     }
     if (!overlayHeadline.trim() && !overlaySub.trim()) {
-      setOverlayMessage("စာထည့်ဖို့ အရင် ခေါင်းစဉ် ဒါမှမဟုတ် စာကြောင်းတစ်ခု ရေးပါ။");
+      setOverlayMessage(t("create.errNeedOverlayText"));
       return;
     }
     setOverlayMessage("");
@@ -585,16 +605,17 @@ function CreatePageInner() {
         URL.revokeObjectURL(url);
       }, "image/png");
     };
-    img.onerror = () => setOverlayMessage("ပုံကို ဖွင့်လို့ မရပါ။ ထပ်ကြိုးစားပါ။");
+    img.onerror = () => setOverlayMessage(t("create.errImageOpenFailed"));
     img.src = selected;
   }
 
   async function saveDesign() {
     if (!aiPrompt.trim()) {
-      setSavedMessage("Prompt မရှိသေးပါ။");
+      setSavedMessage(t("create.msgNoPrompt"));
       return;
     }
     const record = {
+      // eslint-disable-next-line react-hooks/purity -- id is generated in a click handler, not during render.
       id: `guest-${Date.now()}`,
       prompt: aiPrompt,
       channel,
@@ -606,29 +627,29 @@ function CreatePageInner() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ prompt: aiPrompt, channel, format: channelInfo.format }),
       });
-      setSavedMessage(res.ok ? "Design သိမ်းပြီးပြီ — Designs မှာ ကြည့်လို့ရတယ်။" : "Design သိမ်းလို့ မရပါ။");
+      setSavedMessage(res.ok ? t("create.msgDesignSaved") : t("create.msgDesignSaveFailed"));
       return;
     }
     try {
       const prev = JSON.parse(localStorage.getItem("thukha-designs") ?? "[]") as typeof record[];
       localStorage.setItem("thukha-designs", JSON.stringify([record, ...prev].slice(0, 20)));
-      setSavedMessage("Design သိမ်းပြီးပြီ — Designs မှာ ကြည့်လို့ရတယ်။");
+      setSavedMessage(t("create.msgDesignSaved"));
     } catch {
-      setSavedMessage("Design သိမ်းလို့ မရပါ။");
+      setSavedMessage(t("create.msgDesignSaveFailed"));
     }
   }
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex flex-col gap-2 rounded-3xl bg-gradient-to-br from-thukha-violet via-thukha-violet to-thukha-lilac p-5 text-white shadow-xl shadow-thukha-violet/30 sm:p-8">
-        <h1 className="text-2xl font-bold sm:text-3xl">ဖန်တီးပါ</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{t("create.title")}</h1>
         <p className="leading-7 text-white/85">
-          စာ အရင် ရိုက် → ပုံလိုချင်တာ ရေး → AI ပုံ ထုတ် → စာပါတဲ့ ပုံ download။
+          {t("create.subtitle")}
         </p>
         <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
           {isUnlimited
-            ? "ကိုယ့် Token: ∞ Unlimited (Admin) · Server (login)"
-            : `ကိုယ့် Token: ${effectiveTokens} / ${START_TOKENS} · ${serverTokens !== null ? "Server (login)" : "Browser (guest)"}`} · {imageProvider === "cloudflare" ? "Cloudflare FLUX နဲ့ ဖန်တီးတယ်" : "Gemini နဲ့ ဖန်တီးတယ်"}
+            ? t("create.tokenPillUnlimited")
+            : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: serverTokens !== null ? t("create.modeServer") : t("create.modeBrowser"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
         </p>
       </header>
 
@@ -638,31 +659,31 @@ function CreatePageInner() {
       <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_420px]">
         <div className="flex flex-col gap-6">
       <section className={sectionClass}>
-        <h2 className="text-lg font-bold">လုပ်ငန်း</h2>
+        <h2 className="text-lg font-bold">{t("create.business")}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className={labelClass}>
-            လုပ်ငန်းအမျိုးအစား
+            {t("create.businessType")}
             <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className={`${inputClass} mt-1`}>
-              {BUSINESS_TYPES.map((t) => (
-                <option key={t}>{t}</option>
+              {BUSINESS_TYPES.map((bt) => (
+                <option key={bt} value={bt}>{lang === "en" ? (BUSINESS_TYPE_LABELS_EN[bt] ?? bt) : bt}</option>
               ))}
             </select>
           </label>
           <label className={labelClass}>
-            Campaign goal
+            {t("create.goal")}
             <select value={goal} onChange={(e) => setGoal(e.target.value)} className={`${inputClass} mt-1`}>
-              {GOALS.map((t) => (
-                <option key={t}>{t}</option>
+              {GOALS.map((g) => (
+                <option key={g} value={g}>{lang === "en" ? (GOAL_LABELS_EN[g] ?? g) : g}</option>
               ))}
             </select>
           </label>
         </div>
         <label className={labelClass}>
-          လုပ်ငန်းအမည်
-          <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="ဥပမာ — Yangon Kitchen" className={`${inputClass} mt-1`} />
+          {t("create.businessName")}
+          <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder={t("create.businessNamePlaceholder")} className={`${inputClass} mt-1`} />
         </label>
         <label className={labelClass}>
-          Channel
+          {t("create.channel")}
           <select value={channel} onChange={(e) => setChannel(e.target.value)} className={`${inputClass} mt-1`}>
             {CHANNELS.map((c) => (
               <option key={c.id}>{c.id}</option>
@@ -676,16 +697,13 @@ function CreatePageInner() {
           sent to the API only as scene mood, and after generation
           it is overlaid on the image automatically. */}
       <section className={sectionClass}>
-        <h2 className="text-lg font-bold">၁။ ပုံပေါ်မှာ ပေါ်မယ့် စာ (အရင် ရိုက်ပါ)</h2>
-        <p className="text-sm leading-6 text-thukha-indigo/70">
-          ပုံမထုတ်ရသေးလည်း ဒီမှာ စာ ရိုက်လို့ရတယ်။ ပုံထုတ်ပြီးရင်
-          ဒီစာက ပုံပေါ်မှာ အလိုလို ပေါ်မယ်။ ဒီစာကို AI က မထုတ်ဘူး —
-          ပုံပေါ်မှာ သီးသန့် ထပ်ဆွဲတာမို့ မြန်မာစာ ၁၀၀% မှန်မယ်။
+        <h2 className="text-lg font-bold">{t("create.section1")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("create.section1Help")}
         </p>
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold text-thukha-indigo">
-            စမ်းဖို့ စာနမူနာများ — တစ်ခု နှိပ်လိုက်ရင် ခေါင်းစဉ် + စာကြောင်း
-            နှစ်ခုလုံး အလိုလို ဖြည့်ပေးမယ်:
+          <p className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("create.samples")}
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {TEXT_EXAMPLES.map((ex) => (
@@ -698,8 +716,8 @@ function CreatePageInner() {
                 }}
                 className="rounded-xl bg-thukha-lilac/20 p-3 text-left ring-1 ring-thukha-lilac/50"
               >
-                <span className="block text-sm font-bold text-thukha-indigo">{ex.label}</span>
-                <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70">
+                <span className="block text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">{ex.label}</span>
+                <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70 dark:text-white/70">
                   {ex.headline} — {ex.sub}
                 </span>
               </button>
@@ -707,28 +725,28 @@ function CreatePageInner() {
           </div>
         </div>
         <label className={labelClass}>
-          ခေါင်းစဉ်
+          {t("create.headline")}
           <input
             id="overlay-headline-input"
             value={overlayHeadline}
             onChange={(e) => setOverlayHeadline(e.target.value)}
-            placeholder="ဥပမာ: 50% လျှော့စျေး"
+            placeholder={t("create.headlinePlaceholder")}
             className={`${inputClass} mt-1`}
           />
         </label>
         <label className={labelClass}>
-          စာကြောင်း (optional)
+          {t("create.sub")}
           <input
             id="overlay-sub-input"
             value={overlaySub}
             onChange={(e) => setOverlaySub(e.target.value)}
-            placeholder="ဥပမာ: ဒီအပတ်ပဲ ရမယ်"
+            placeholder={t("create.subPlaceholder")}
             className={`${inputClass} mt-1`}
           />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className={labelClass}>
-            နေရာ (အပေါ်/အောက်)
+            {t("create.position")}
             <select
               value={overlayPosition}
               onChange={(e) => {
@@ -738,102 +756,100 @@ function CreatePageInner() {
               }}
               className={`${inputClass} mt-1`}
             >
-              <option value="top">အပေါ်</option>
-              <option value="center">အလယ်</option>
-              <option value="bottom">အောက်</option>
+              <option value="top">{t("create.positionTop")}</option>
+              <option value="center">{t("create.positionCenter")}</option>
+              <option value="bottom">{t("create.positionBottom")}</option>
             </select>
           </label>
           <label className={labelClass}>
-            စာအရောင်
+            {t("create.color")}
             <select
               value={overlayColor}
               onChange={(e) => setOverlayColor(e.target.value as "white" | "black")}
               className={`${inputClass} mt-1`}
             >
-              <option value="white">အဖြူ</option>
-              <option value="black">အမည်း</option>
+              <option value="white">{t("create.colorWhite")}</option>
+              <option value="black">{t("create.colorBlack")}</option>
             </select>
           </label>
           <label className={labelClass}>
-            စာအရွယ်အစား
+            {t("create.size")}
             <select
               value={overlaySize}
               onChange={(e) => setOverlaySize(e.target.value as "small" | "medium" | "large")}
               className={`${inputClass} mt-1`}
             >
-              <option value="small">သေး</option>
-              <option value="medium">အလတ်</option>
-              <option value="large">ကြီး</option>
+              <option value="small">{t("create.sizeSmall")}</option>
+              <option value="medium">{t("create.sizeMedium")}</option>
+              <option value="large">{t("create.sizeLarge")}</option>
             </select>
           </label>
           <label className={labelClass}>
-            စာစီမှု (ဘယ်/ညာ)
+            {t("create.align")}
             <select
               value={overlayAlign}
               onChange={(e) => setOverlayAlign(e.target.value as "left" | "center" | "right")}
               className={`${inputClass} mt-1`}
             >
-              <option value="left">ဘယ်</option>
-              <option value="center">အလယ်</option>
-              <option value="right">ညာ</option>
+              <option value="left">{t("create.alignLeft")}</option>
+              <option value="center">{t("create.alignCenter")}</option>
+              <option value="right">{t("create.alignRight")}</option>
             </select>
           </label>
           <label className={`${labelClass} col-span-2`}>
-            စာနောက်ခံ
+            {t("create.bg")}
             <select
               value={overlayBg}
               onChange={(e) => setOverlayBg(e.target.value as "none" | "dark" | "light")}
               className={`${inputClass} mt-1`}
             >
-              <option value="none">မရှိ (စာပဲ)</option>
-              <option value="dark">အမည်း မှိန် (စာဖြူနဲ့ လိုက်ဖက်တယ်)</option>
-              <option value="light">အဖြူ မှိန် (စာမည်းနဲ့ လိုက်ဖက်တယ်)</option>
+              <option value="none">{t("create.bgNone")}</option>
+              <option value="dark">{t("create.bgDark")}</option>
+              <option value="light">{t("create.bgLight")}</option>
             </select>
           </label>
         </div>
       </section>
 
       <section className={sectionClass}>
-        <h2 className="text-lg font-bold">၂။ AI ပုံဖန်တီးပါ</h2>
+        <h2 className="text-lg font-bold">{t("create.section2")}</h2>
         <label className={labelClass}>
-          လိုချင်တဲ့ ပုံ
-          <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} placeholder="ဥပမာ — မုန့်ဟင်းခါးကို လှပစွာ တင်ထားတဲ့ စားပွဲ၊ warm light" className={`${inputClass} mt-1`} />
+          {t("create.promptLabel")}
+          <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} placeholder={t("create.promptPlaceholder")} className={`${inputClass} mt-1`} />
         </label>
         {/* Hidden entirely when the selected type has no examples
             (e.g. ဝန်ဆောင်မှု after its cleaning/delivery examples
             were removed 2026-11-01) — no empty heading is shown. */}
         {PROMPT_EXAMPLES.filter((ex) => ex.type === businessType).length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-bold text-thukha-indigo">
-              Prompt နမူနာများ ({businessType} အတွက်ပဲ) — တစ်ခု နှိပ်လိုက်ရင်
-              အဲဒီ prompt ကို အပေါ် box ထဲ ဖြည့်ပေးမယ်၊ အမျိုးအစား ပြောင်းရင်
-              နမူနာလည်း အလိုလို ပြောင်းမယ်:
+            <p className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+              {t("create.promptExamples", { type: businessType })}
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {PROMPT_EXAMPLES.filter((ex) => ex.type === businessType).map((ex) => (
                 <button key={ex.label} type="button" onClick={() => setAiPrompt(ex.prompt)} className="rounded-xl bg-thukha-lilac/20 p-3 text-left ring-1 ring-thukha-lilac/50">
-                  <span className="block text-sm font-bold text-thukha-indigo">{ex.label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70">{ex.prompt}</span>
+                  <span className="block text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">{ex.label}</span>
+                  <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70 dark:text-white/70">{ex.prompt}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
-        <button type="button" onClick={getPromptSuggestions} disabled={suggestionsLoading} className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet disabled:opacity-50">
-          {suggestionsLoading ? "Prompt suggestions ထုတ်နေပါတယ်…" : "Prompt suggestions ရယူပါ"}
+        <button type="button" onClick={getPromptSuggestions} disabled={suggestionsLoading} className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac disabled:opacity-50">
+          {suggestionsLoading ? t("create.suggestionsLoading") : t("create.suggestionsButton")}
         </button>
         {promptSuggestions.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-bold text-thukha-indigo">အပေါ်က စာ (ခေါင်းစဉ်) ကို အခြေခံတဲ့ suggestions — ဒီထဲက တစ်ခု ရွေး → prompt ထဲ ထည့်မယ်:</p>
+            <p className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">{t("create.suggestionsHelp")}</p>
             {promptSuggestions.map((s) => (
-              <button key={s.slice(0, 40)} type="button" onClick={() => setAiPrompt(s)} className="rounded-xl bg-thukha-lilac/20 p-3 text-left text-sm leading-6 text-thukha-indigo ring-1 ring-thukha-lilac/50">
+              <button key={s.slice(0, 40)} type="button" onClick={() => setAiPrompt(s)} className="rounded-xl bg-thukha-lilac/20 p-3 text-left text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb] ring-1 ring-thukha-lilac/50">
                 {s}
               </button>
             ))}
           </div>
         )}
         <label className={labelClass}>
-          ကိုယ့်ပုံ ထည့်ပါ (optional, အများဆုံး ၃ ပုံ) — AI က ဒီပုံတွေကို သုံးပြီး ဖန်တီးမယ်
+          {t("create.refLabel")}
           <input type="file" accept="image/*" multiple onChange={addReferenceImages} className={`${inputClass} mt-1`} />
         </label>
         {referenceImages.length > 0 && (
@@ -841,47 +857,47 @@ function CreatePageInner() {
             {referenceImages.map((url, i) => (
               <div key={url.slice(-32) + i} className="relative overflow-hidden rounded-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`ကိုယ့်ပုံ ${i + 1}`} className="h-24 w-full object-cover sm:h-28" />
-                <button type="button" onClick={() => setReferenceImages((prev) => prev.filter((_, j) => j !== i))} aria-label="ပုံ ဖြုတ်ပါ" className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-thukha-indigo text-white">
+                <img src={url} alt={`${t("create.refAlt")} ${i + 1}`} className="h-24 w-full object-cover sm:h-28" />
+                <button type="button" onClick={() => setReferenceImages((prev) => prev.filter((_, j) => j !== i))} aria-label={t("create.refRemove")} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full bg-thukha-indigo text-white">
                   ×
                 </button>
               </div>
             ))}
           </div>
         )}
-        <p className="text-sm text-thukha-indigo/60">
-          သတိ: AI က ပုံကို ပြန်ဆွဲမယ်၊ မူရင်းပုံ အတိုင်း ထွက်မှာ မဟုတ်ဘူး။ ရလာတဲ့ ပုံကို စစ်ပြီးမှ download လုပ်ပါ။
+        <p className="text-sm text-thukha-indigo/60 dark:text-white/60">
+          {t("create.refWarning")}
         </p>
         {imageProvider === "cloudflare" && (
-          <p className="rounded-xl bg-teal-50 p-3 text-sm leading-6 text-teal-900 ring-1 ring-teal-200">
-            Free mode (Cloudflare FLUX) သုံးနေတယ် — ပုံထုတ်တာ အလကားပါ၊ ဒါပေမယ့် ကိုယ့်ပုံကို ပြင်လို့ မရဘူး၊ စာနဲ့ပဲ ထုတ်လို့ရတယ်၊ ပုံတိုင်း စတုဂံပုံ (1024×1024) ပဲ ထွက်မယ်။
+          <p className="rounded-xl bg-teal-50 dark:bg-teal-950 p-3 text-sm leading-6 text-teal-900 dark:text-teal-100 ring-1 ring-teal-200 dark:ring-teal-800">
+            {t("create.freeMode")}
           </p>
         )}
         {imageProvider === "cloudflare" && referenceImages.length > 0 && (
-          <p className="rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
-            သတိ: Free mode မှာ ကိုယ့်ပုံ ထည့်ထားရင် ပုံထုတ်လို့ မရဘူး — ပုံကို ဖြုတ်ပြီး စာနဲ့ပဲ ထုတ်ပါ၊ ဒါမှမဟုတ် Gemini (paid) ကို ပြောင်းပါ။
+          <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-3 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
+            {t("create.freeModeRefWarning")}
           </p>
         )}
-        <p className="text-sm leading-6 text-thukha-indigo">
+        <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
           {isUnlimited
-            ? "Admin account — Token မဖြတ်ဘူး၊ Unlimited။ ပုံဘယ်နှစ်ပုံထုတ်ထုတ် လက်ကျန် ကုန်မှာ မဟုတ်ဘူး။"
-            : <>ဒီပုံ ကုန်ကျမယ့် Token: <b>{cost}</b> · အခြေခံ 10 + ကိုယ့်ပုံ တစ်ပုံ 5 + Story/Cover ဆို 5 + အသေးစိတ် prompt (စာလုံး 120 ကျော်) ဆို 5 · ပုံ အောင်မြင်မှ ဖြတ်မယ်၊ မအောင်ရင် မဖြတ်ဘူး။</>}
+            ? t("create.costNoteAdmin")
+            : t("create.costNote", { cost })}
         </p>
         <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50">
-          {aiLoading ? "AI ပုံ ထုတ်နေပါတယ်…" : isUnlimited ? "AI ပုံ ဖန်တီးပါ (Admin — အလကား)" : `AI ပုံ ဖန်တီးပါ (${cost} token)`}
+          {aiLoading ? t("create.generateLoading") : isUnlimited ? t("create.generateAdmin") : t("create.generate", { cost })}
         </button>
         {aiError && (
-          <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
+          <div className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
             <p className="font-bold">{aiError}</p>
             {aiError.includes("Token") ? (
               <>
-                <p className="mt-1">Token ကုန်သွားလို့ ပုံထုတ်လို့ မရတော့ပါ။ အစစ်မှာ token ဝယ်ဖြည့်ရမယ်။</p>
+                <p className="mt-1">{t("create.tokenOut")}</p>
                 {serverTokens === null ? (
                   <button type="button" onClick={refillTestTokens} className="mt-2 min-h-[44px] rounded-full bg-thukha-violet px-6 py-2 font-bold text-white">
-                    Token 100 ပြန်ဖြည့် (စမ်းသပ်ဖို့သာ)
+                    {t("create.refillTest")}
                   </button>
                 ) : (
-                  <p className="mt-1">Login ထားတဲ့ account ရဲ့ token က server ထဲမှာပဲ ရှိတယ် — browser ခလုတ်နဲ့ ပြန်ဖြည့်လို့ မရဘူး။</p>
+                  <p className="mt-1">{t("create.serverTokenNote")}</p>
                 )}
               </>
             ) : null}
@@ -892,27 +908,25 @@ function CreatePageInner() {
         </div>
         <aside className="lg:sticky lg:top-24">
       <section className={sectionClass}>
-        <h2 className="text-lg font-bold">Preview (အမြဲ ပေါ်နေမယ်)</h2>
-        <p className="text-sm leading-6 text-thukha-indigo">
-          <b>ဒီ Preview က အလကားပါ — token မဖြတ်ဘူး။</b> ပုံမထုတ်ခင် စာကို
-          ဒီမှာ အရင် စစ်ပြီး ပြင်ပါ၊ စာကျေနပ်မှ AI ပုံ ဖန်တီးပါ။
+        <h2 className="text-lg font-bold">{t("create.preview")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+          <b>{t("create.previewFree")}</b> {t("create.previewFreeHelp")}
         </p>
         {isGuest && (
-          <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
-            Guest အနေနဲ့ စမ်းသုံးလို့ရတယ် — <b>Download လုပ်လို့ မရဘူး</b>။
-            Screenshot ရိုက်ရင်လည်း watermark ပါမယ်။ Clean PNG ရဖို့{" "}
-            <a href="/login" className="font-bold text-thukha-violet">Login လုပ်ပါ</a>။
+          <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
+            {t("create.previewGuest")} {t("create.previewGuestHelp")}{" "}
+            <a href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("create.previewGuestLogin")}</a>.
           </p>
         )}
         <div ref={previewRef} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="relative mx-auto w-full max-w-[480px] select-none">
           {selected ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={selected} alt="AI ပုံ" draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
+            <img src={selected} alt={t("create.previewAlt")} draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
           ) : (
             <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-thukha-violet to-thukha-lilac p-6 text-center font-bold text-white shadow-xl shadow-thukha-violet/30">
               {overlayHeadline.trim() || overlaySub.trim()
-                ? "Preview နောက်ခံ — စာကို ဒီမှာ ဆွဲပြီး ပြင်လို့ရတယ်၊ ပုံမထုတ်ရသေးဘူး"
-                : "AI ပုံ ဒီမှာ ပေါ်မယ် — အရင် section ၁ မှာ စာ ရိုက်ကြည့်ပါ"}
+                ? t("create.previewPlaceholderBg")
+                : t("create.previewPlaceholderNoImage")}
             </div>
           )}
               {/* Separate layers: headline and subheadline are two
@@ -1017,7 +1031,7 @@ function CreatePageInner() {
           {selected && isGuest && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
               <div className="absolute inset-x-0 top-0 bg-black/60 py-2 text-center text-xs font-bold text-white">
-                Guest Preview — Download လုပ်လို့ မရပါ · Login လုပ်ပါ
+                {t("create.guestWatermark")}
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="whitespace-nowrap text-2xl font-black text-white/70 sm:text-3xl" style={{ transform: "rotate(-25deg)", textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>
@@ -1028,10 +1042,8 @@ function CreatePageInner() {
           )}
         </div>
         {!selected && (overlayHeadline.trim() || overlaySub.trim()) && (
-          <p className="text-sm leading-6 text-thukha-indigo">
-            ပုံမထုတ်ရသေးလည်း စာကို ဒီမှာ <b>ဆွဲပြီး နေရာ ရွှေ့</b> လို့ရတယ်၊
-            စာကို <b>နှစ်ချက် နှိပ်</b> ရင် section ၁ က input ဆီ ရောက်ပြီး စာသား
-            ပြင်လို့ရတယ် — <b>token လုံးဝ မကုန်ဘူး</b>၊ ပုံ ဖန်တီးမှ token ဖြတ်မယ်။
+          <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("create.dragHelp")}
           </p>
         )}
         {!selected && (overlayCustomHead || overlayCustomSub) && (
@@ -1041,19 +1053,16 @@ function CreatePageInner() {
               setOverlayCustomHead(null);
               setOverlayCustomSub(null);
             }}
-            className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet"
+            className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
           >
-            ဆွဲထားတဲ့ နေရာ ပြန်ဖျက်
+            {t("create.dragReset")}
           </button>
         )}
         {selected ? (
           <>
             {(overlayHeadline.trim() || overlaySub.trim()) && (
-              <p className="text-sm leading-6 text-thukha-indigo">
-                ခေါင်းစဉ်နဲ့ စာကြောင်းက <b>သီးခြား layer နှစ်ခု</b> — တစ်ခုစီကို{" "}
-                <b>လက်နဲ့ (ဖုန်းမှာ) ဒါမှမဟုတ် mouse နဲ့ ဆွဲပြီး</b>{" "}
-                ကြိုက်တဲ့နေရာ သီးခြား ရွှေ့လို့ရတယ် — ဆွဲပြီးတဲ့ နေရာအတိုင်း
-                PNG download မှာလည်း ထွက်မယ်။
+              <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+                {t("create.layersHelp")}
               </p>
             )}
             {(overlayCustomHead || overlayCustomSub) && (
@@ -1063,41 +1072,39 @@ function CreatePageInner() {
                   setOverlayCustomHead(null);
                   setOverlayCustomSub(null);
                 }}
-                className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet"
+                className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
               >
-                ဆွဲထားတဲ့ နေရာ ပြန်ဖျက် (အပေါ်/အလယ်/အောက် ရွေးထားတာဆီ ပြန်သွား)
+                {t("create.dragResetFull")}
               </button>
             )}
             {isGuest ? (
               <>
-                <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-300">
-                  Guest အနေနဲ့ Download လုပ်လို့ မရပါ — Login / Signup လုပ်ပြီးမှ
-                  စာနဲ့ PNG, စာမပါဘဲ PNG တို့ကို Download ရမယ်။
+                <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
+                  {t("create.downloadGuestNote")}
                 </p>
                 <a href="/login" className="flex min-h-[44px] items-center justify-center rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
-                  Login လုပ်ပြီး Download လုပ်ပါ
+                  {t("create.downloadLoginCta")}
                 </a>
               </>
             ) : (
               <>
                 <button type="button" onClick={downloadWithText} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
-                  စာနဲ့ PNG Download
+                  {t("create.downloadWithText")}
                 </button>
-                {overlayMessage && <p className="text-sm leading-6 text-thukha-indigo">{overlayMessage}</p>}
-                <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet">
-                  စာမပါဘဲ PNG Download
+                {overlayMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{overlayMessage}</p>}
+                <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet dark:text-thukha-lilac">
+                  {t("create.downloadWithoutText")}
                 </a>
               </>
             )}
-            <button type="button" onClick={saveDesign} className="min-h-[44px] rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet">
-              Design သိမ်းပါ
+            <button type="button" onClick={saveDesign} className="min-h-[44px] rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet dark:text-thukha-lilac">
+              {t("create.saveDesign")}
             </button>
-            {savedMessage && <p className="text-sm leading-6 text-thukha-indigo">{savedMessage}</p>}
+            {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}
           </>
         ) : (
-          <p className="text-sm leading-6 text-thukha-indigo">
-            စာကျေနပ်ပြီဆိုမှ section ၂ မှာ <b>AI ပုံ ဖန်တီးပါ</b> ကို နှိပ်ပါ —
-            အဲဒီမှာမှ token ဖြတ်မယ်။
+          <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+            {t("create.saveHelp")}
           </p>
         )}
         {aiImages.length > 1 && (
@@ -1105,7 +1112,7 @@ function CreatePageInner() {
             {aiImages.map((url, i) => (
               <button key={url.slice(-32) + i} type="button" onClick={() => setSelected(url)} className={`overflow-hidden rounded-2xl ring-2 ${selected === url ? "ring-thukha-violet" : "ring-thukha-lilac/40"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`AI ပုံ ${i + 1}`} className="h-20 w-full object-cover sm:h-24" />
+                <img src={url} alt={`${t("create.historyAlt")} ${i + 1}`} className="h-20 w-full object-cover sm:h-24" />
               </button>
             ))}
           </div>
