@@ -129,9 +129,6 @@ export default function SignupPage() {
       <PlatformAbout />
       <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-bold">{t("signup.title")}</h1>
-      <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
-        {t("signup.tokenNote")}
-      </p>
       {pending ? (
         <div className="flex flex-col gap-4 rounded-2xl bg-amber-50 dark:bg-amber-950 p-6 ring-1 ring-amber-300 dark:ring-amber-800">
           <h2 className="text-lg font-bold text-amber-900 dark:text-amber-100">{t("signup.pendingTitle")}</h2>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 
 /* Shared ThuKha summary shown on Login and Signup (the X-Panda
@@ -14,22 +13,10 @@ export default function PlatformAbout() {
       <p className="text-base leading-7 text-white/90">
         {t("about.tagline")}
       </p>
-      <ol className="flex flex-col gap-3 text-sm leading-6 text-white/90">
-        <li>
-          <strong className="text-white">{t("about.step1")}</strong>
-          <br />
-          {t("about.step1Text")}
-        </li>
-        <li>
-          <strong className="text-white">{t("about.step2")}</strong>
-          <br />
-          {t("about.step2Text")}
-        </li>
-        <li>
-          <strong className="text-white">{t("about.step3")}</strong>
-          <br />
-          {t("about.step3Text")}
-        </li>
+      <ol className="flex flex-col gap-2 text-sm leading-6 text-white/90">
+        <li><strong className="text-white">{t("about.step1")}</strong></li>
+        <li><strong className="text-white">{t("about.step2")}</strong></li>
+        <li><strong className="text-white">{t("about.step3")}</strong></li>
       </ol>
       <p className="rounded-xl bg-white/10 p-4 text-sm leading-6 text-white/90">
         {t("about.burmesePromise")}
@@ -37,9 +24,6 @@ export default function PlatformAbout() {
       <p className="text-sm leading-6 text-white/80">
         {t("about.tokens")}
       </p>
-      <Link href="/create" className="text-sm font-bold text-thukha-lilac">
-        {t("about.guest")}
-      </Link>
     </section>
   );
 }
