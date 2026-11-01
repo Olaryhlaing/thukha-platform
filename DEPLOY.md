@@ -195,6 +195,14 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
      Confirm link ကို နှိပ်ရင် `/auth/confirm` က code / hash နှစ်မျိုးလုံးကို
      ကိုင်ပြီး session ရရင် `/create` ကို သွားမယ်၊ link ကုန်သွားရင်
      Signup ကနေ **Confirm email ပြန်ပို့ပါ** နဲ့ ပြန်ပို့လို့ရတယ်။
+- **PWA install စမ်းပုံ (live HTTPS မှာပဲ ရမယ်):**
+  Android/PC Chrome မှာ live site ဖွင့်ပြီး menu → **Install app / Add to Home screen**
+  (သို့) address bar က install icon ကို နှိပ်ပါ — ThuKha robot icon နဲ့
+  standalone app အနေနဲ့ ဖွင့်မယ်။ iOS Safari မှာတော့ Share → **Add to Home Screen**
+  ကို ကိုယ်တိုင် နှိပ်ရမယ် (iOS က auto install prompt မပေးဘူး)။
+  သတိထား: PWA install လုပ်ရုံနဲ့ offline အလုပ်လုပ်မှာ မဟုတ်ဘူး — Login,
+  AI ပုံထုတ်တာ, token တွေအားလုံး internet လိုတယ်၊ service worker က
+  စာမျက်နှာတွေကို network-first ပဲ ကိုင်တယ်၊ `/api/` ကို ဘယ်တော့မှ cache မလုပ်ဘူး။
 - **Forgot password (Redirect URLs မှာ ဒါလည်း ထည့်ပါ):**
   `/forgot-password` က reset link ကို `/auth/reset-password` အတိအကျ ပို့တယ်၊
   ဒါကြောင့် Redirect URLs မှာ ဒီ ၂ ခုပါ ထည့်ရမယ်:
