@@ -210,13 +210,17 @@ Vercel မှာလည်း မရဘူး၊ local မှာ ရပြီး 
      values ((select id from auth.users where email = 'admin@example.com'), 'admin')
      on conflict (id) do update set role = 'admin';
      ```
-  3. ပြီးရင် **`/admin/login` မှာပဲ** အဲဒီ account နဲ့ login လုပ်ပါ၊ `/admin` မှာ
-     users + token + generations တွေ မြင်ရမယ်။
-  4. **ရောလို့ မရတဲ့ စည်းမျဉ်း:** Customer account က `/admin/login` မှာ ဝင်လို့
-     မရဘူး (ချက်ချင်း sign out လုပ်ပေးတယ်)၊ Admin account က Customer
-     `/login` မှာ ဝင်လို့ မရဘူး (ချက်ချင်း sign out လုပ်ပေးတယ်)၊
-     `/admin` API တွေက server ဘက်မှာ role ကို စစ်ပြီး customer ဆို 403
-     ပြန်တယ်။
+  3. ပြီးရင် **`/login` မှာပဲ** အဲဒီ account နဲ့ login လုပ်ပါ —
+     Login စာမျက်နှာတစ်ခုတည်းပဲ ရှိတယ်၊ admin login သီးသန့် မရှိတော့ဘူး။
+     Role ပေါ် မူတည်ပြီး admin ဆိုရင် `/admin` ကို၊ customer ဆိုရင်
+     `/create` ကို အလိုလို သွားမယ်။ `/admin` မှာ users + token +
+     generations တွေ မြင်ရမယ်။ (`/admin/login` ကို ဖွင့်ရင် `/login` ကို
+     အလိုလို ပြန်သွားမယ်။)
+  4. **ခွဲခြားမှု:** Login စာမျက်နှာ တစ်ခုတည်းပေမဲ့၊ `/admin` API တွေက
+     server ဘက်မှာ role ကို စစ်ပြီး customer ဆို 403 ပြန်တယ်၊
+     `/admin` စာမျက်နှာကလည်း customer data ကို မပြဘူး။ Customer
+     account နဲ့ login လုပ်ပြီး `/admin` ကို ရိုက်ဖွင့်ရင်လည်း data
+     မြင်ရမှာ မဟုတ်ဘူး။
   5. **အရေးကြီး — schema.sql ကို ပြန်လည် run ပါ:** အရင် schema က
      browser key နဲ့ ကိုယ့် row ကို ပြင်လို့ရတဲ့ `FOR ALL` policy ဖြစ်နေလို့၊
      customer က တိုက်ရိုက် Supabase ခေါ်ပြီး `role='admin'` လို့

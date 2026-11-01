@@ -59,32 +59,26 @@ export default function LoginPage() {
       }
       return;
     }
-    // Strict role separation (mirror of /admin/login): an admin
-    // account must use Admin Login only, never Customer Login, so
-    // admin and customer sessions are never mixed on one account.
+    // Unified login: one login page for everyone. The split is
+    // by the account's role (server-side, from /api/me), not by
+    // a separate admin login page — admin accounts go to /admin,
+    // customer accounts go to /create, from the same email/password.
     const res = await fetch("/api/me", {
       headers: { Authorization: `Bearer ${data.session.access_token}` },
     });
     const json = (await res.json()) as { role?: string };
     setLoading(false);
-    if (res.ok && json.role === "admin") {
-      // Do not leave an admin session behind on the customer side.
-      await supabase!.auth.signOut();
-      setError("ဒီ account က Admin ဖြစ်နေတယ်။ Admin ဆိုရင် Admin Login ကိုပဲ သုံးပါ — Customer Login နဲ့ ရောမသုံးပါ။");
-      return;
-    }
-    router.push("/create");
+    router.push(res.ok && json.role === "admin" ? "/admin" : "/create");
   }
 
   return (
     <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
       <PlatformAbout />
       <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-bold">Customer Login</h1>
+      <h1 className="text-3xl font-bold">Login</h1>
       <p className="text-sm leading-6 text-thukha-indigo/70">
-        Customer အနေနဲ့ login လုပ်ပါ။ Admin ဆိုရင်{" "}
-        <Link href="/admin/login" className="font-bold text-thukha-violet">Admin Login</Link>{" "}
-        ကို သွားပါ။
+        Email နဲ့ password နဲ့ login လုပ်ပါ။ Account ရဲ့ role ပေါ် မူတည်ပြီး
+        Admin ဆိုရင် /admin ကို၊ Customer ဆိုရင် /create ကို အလိုလို သွားမယ်။
       </p>
       <label className="text-sm font-bold text-thukha-indigo">
         Email

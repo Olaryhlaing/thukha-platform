@@ -28,7 +28,7 @@ export default function AdminPage() {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     if (!token) {
-      setError("Admin login လုပ်ပြီးမှ ကြည့်လို့ရမယ်။");
+      setError("Login လုပ်ပြီးမှ ကြည့်လို့ရမယ်။");
       return;
     }
     const res = await fetch("/api/admin/stats", {
@@ -91,7 +91,7 @@ export default function AdminPage() {
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-10">
         <h1 className="text-3xl font-bold">Admin</h1>
         <p className="leading-7 text-amber-900">{error}</p>
-        <Link href="/admin/login" className="font-bold text-thukha-violet">Admin Login ကို သွားပါ →</Link>
+        <Link href="/login" className="font-bold text-thukha-violet">Login ကို သွားပါ →</Link>
       </main>
     );
   }

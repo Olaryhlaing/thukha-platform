@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
 
 /* Who am I: returns the logged-in user's email, role and server
-   token balance. Used by /admin/login to prove admin role, and by
-   the admin dashboard. Guests get 401 — they use /login instead. */
+   token balance. Used by the unified /login page to route admins
+   to /admin and customers to /create, and by the admin dashboard.
+   Guests get 401 — they use /login instead. */
 export async function GET(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
   const user = await getUserFromToken(token);
