@@ -229,6 +229,21 @@ function CreatePageInner() {
   const [overlaySize, setOverlaySize] = useState<"small" | "medium" | "large">("medium");
   const [overlayAlign, setOverlayAlign] = useState<"left" | "center" | "right">("center");
   const [overlayBg, setOverlayBg] = useState<"none" | "dark" | "light">("none");
+  // Overlay font, chosen by the customer for the text they add
+  // (headline, subheadline, brand name — all three share it, so
+  // the promo looks like one design, not three). Default is the
+  // current sans; the other stacks always end in a font that has
+  // Burmese glyphs, so Burmese text never falls back to a broken
+  // system font.
+  const [overlayFont, setOverlayFont] = useState<"default" | "padauk" | "serif" | "playfair">("default");
+  const overlayFontStack =
+    overlayFont === "padauk"
+      ? '"Padauk", "Noto Sans Myanmar", sans-serif'
+      : overlayFont === "serif"
+        ? '"Noto Serif Myanmar", Georgia, serif'
+        : overlayFont === "playfair"
+          ? '"Playfair Display", "Noto Sans Myanmar", serif'
+          : '"Noto Sans Myanmar", Inter, sans-serif';
   // Separate drag-to-position (2026-11-01, user request: headline
   // and subheadline as separate layers, one by one): each line has
   // its own free position in % of the image, set by dragging that
@@ -239,17 +254,28 @@ function CreatePageInner() {
   // stay together in one block at the select position, as before.
   const [overlayCustomHead, setOverlayCustomHead] = useState<{ x: number; y: number } | null>(null);
   const [overlayCustomSub, setOverlayCustomSub] = useState<{ x: number; y: number } | null>(null);
+  // Business-name layer: the business name (e.g. "Yangon kitchen")
+  // is shown ON the final image as a separate browser-drawn layer,
+  // not by the AI. The AI must never draw text (it garbles Burmese
+  // and is unreliable even for English), so the name is drawn by
+  // the browser like the headline/subheadline — spelling 100%
+  // correct, draggable, and included in the with-text PNG only.
+  const [showBrandName, setShowBrandName] = useState(true);
+  const [overlayCustomBrand, setOverlayCustomBrand] = useState<{ x: number; y: number } | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     pointerId: number;
-    which: "head" | "sub";
+    which: "head" | "sub" | "brand";
     startX: number;
     startY: number;
     startPos: { x: number; y: number };
   } | null>(null);
 
-  function defaultCustomPos(which: "head" | "sub"): { x: number; y: number } {
-    const baseY = overlayPosition === "top" ? 15 : overlayPosition === "bottom" ? 85 : 50;
+  function defaultCustomPos(which: "head" | "sub" | "brand"): { x: number; y: number } {
+    // Brand footer stays at the bottom regardless of the headline
+    // position (the headline defaults to the top, so they rarely
+    // overlap; if they do, the brand can be dragged away).
+    const baseY = which === "brand" ? 92 : overlayPosition === "top" ? 15 : overlayPosition === "bottom" ? 85 : 50;
     return {
       x: overlayAlign === "left" ? 10 : overlayAlign === "right" ? 90 : 50,
       // The subheadline sits just below the headline in the
@@ -258,7 +284,7 @@ function CreatePageInner() {
     };
   }
 
-  function onOverlayPointerDown(which: "head" | "sub") {
+  function onOverlayPointerDown(which: "head" | "sub" | "brand") {
     return (e: ReactPointerEvent<HTMLDivElement>) => {
       const container = previewRef.current;
       if (!container) return;
@@ -269,7 +295,7 @@ function CreatePageInner() {
         startX: e.clientX,
         startY: e.clientY,
         startPos:
-          (which === "head" ? overlayCustomHead : overlayCustomSub) ?? defaultCustomPos(which),
+          (which === "head" ? overlayCustomHead : which === "sub" ? overlayCustomSub : overlayCustomBrand) ?? defaultCustomPos(which),
       };
     };
   }
@@ -286,7 +312,8 @@ function CreatePageInner() {
       y: clamp(drag.startPos.y + ((e.clientY - drag.startY) / rect.height) * 100),
     };
     if (drag.which === "head") setOverlayCustomHead(pos);
-    else setOverlayCustomSub(pos);
+    else if (drag.which === "sub") setOverlayCustomSub(pos);
+    else setOverlayCustomBrand(pos);
   }
 
   function onOverlayPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
@@ -498,7 +525,7 @@ function CreatePageInner() {
       setOverlayMessage(t("create.errGuestDownload"));
       return;
     }
-    if (!overlayHeadline.trim() && !overlaySub.trim()) {
+    if (!overlayHeadline.trim() && !overlaySub.trim() && !(showBrandName && businessName.trim())) {
       setOverlayMessage(t("create.errNeedOverlayText"));
       return;
     }
@@ -515,7 +542,7 @@ function CreatePageInner() {
       const h = canvas.height;
       const pad = w * 0.06;
       const maxWidth = w - pad * 2;
-      const font = "Noto Sans Myanmar, Inter, sans-serif";
+      const font = overlayFontStack;
       // Size control: headline is 7% / 9% / 12% of image width,
       // subheadline is always half the headline size.
       const headlineSize = Math.round(
@@ -560,9 +587,13 @@ function CreatePageInner() {
         ? drawLines(overlayHeadline.trim(), headlineSize, true)
         : [];
       const subLines = overlaySub.trim() ? drawLines(overlaySub.trim(), subSize, false) : [];
+      const brandSize = Math.round(headlineSize * 0.6);
+      const brandLines =
+        showBrandName && businessName.trim() ? drawLines(businessName.trim(), brandSize, true) : [];
       const lineHeight = (size: number) => size * 1.25;
       const headHeight = headlineLines.length * lineHeight(headlineSize);
       const subHeight = subLines.length * lineHeight(subSize);
+      const brandHeight = brandLines.length * lineHeight(brandSize);
       // Draw one line's block (its own bg rect + text) at a top.
       const drawBlock = (
         lines: string[],
@@ -627,6 +658,10 @@ function CreatePageInner() {
         : (centerPct + offsetPct / 2) * h - subHeight / 2;
       drawBlock(headlineLines, headlineSize, true, headTop, overlayCustomHead);
       drawBlock(subLines, subSize, false, subTop, overlayCustomSub);
+      const brandTop = overlayCustomBrand
+        ? (overlayCustomBrand.y / 100) * h - brandHeight / 2
+        : 0.92 * h - brandHeight / 2;
+      drawBlock(brandLines, brandSize, true, brandTop, overlayCustomBrand);
       canvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
@@ -714,7 +749,14 @@ function CreatePageInner() {
         </div>
         <label className={labelClass}>
           {t("create.businessName")}
-          <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder={t("create.businessNamePlaceholder")} className={`${inputClass} mt-1`} />
+          <input id="business-name-input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder={t("create.businessNamePlaceholder")} className={`${inputClass} mt-1`} />
+        </label>
+        <label className="flex items-start gap-2 text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+          <input type="checkbox" checked={showBrandName} onChange={(e) => setShowBrandName(e.target.checked)} className="mt-1.5 h-4 w-4 accent-[#5946ED]" />
+          <span>
+            <b>{t("create.showBrandName")}</b>
+            <span className="block text-thukha-indigo/70 dark:text-white/70">{t("create.showBrandHelp")}</span>
+          </span>
         </label>
         <label className={labelClass}>
           {t("create.channel")}
@@ -787,6 +829,7 @@ function CreatePageInner() {
                 setOverlayPosition(e.target.value as "top" | "center" | "bottom");
                 setOverlayCustomHead(null);
                 setOverlayCustomSub(null);
+                setOverlayCustomBrand(null);
               }}
               className={`${inputClass} mt-1`}
             >
@@ -828,6 +871,19 @@ function CreatePageInner() {
               <option value="left">{t("create.alignLeft")}</option>
               <option value="center">{t("create.alignCenter")}</option>
               <option value="right">{t("create.alignRight")}</option>
+            </select>
+          </label>
+          <label className={`${labelClass} col-span-2`}>
+            {t("create.font")}
+            <select
+              value={overlayFont}
+              onChange={(e) => setOverlayFont(e.target.value as "default" | "padauk" | "serif" | "playfair")}
+              className={`${inputClass} mt-1`}
+            >
+              <option value="default">{t("create.fontDefault")}</option>
+              <option value="padauk">{t("create.fontPadauk")}</option>
+              <option value="serif">{t("create.fontSerif")}</option>
+              <option value="playfair">{t("create.fontPlayfair")}</option>
             </select>
           </label>
           <label className={`${labelClass} col-span-2`}>
@@ -1004,7 +1060,7 @@ function CreatePageInner() {
                       ? "rgba(255,255,255,0.65)"
                       : "transparent";
                 const layer = (
-                  which: "head" | "sub",
+                  which: "head" | "sub" | "brand",
                   custom: { x: number; y: number } | null,
                   defaultY: number,
                   content: ReactNode,
@@ -1018,13 +1074,14 @@ function CreatePageInner() {
                       // Edit from the preview itself (free, no token):
                       // jump to the matching section-1 input and focus it.
                       const el = document.getElementById(
-                        which === "head" ? "overlay-headline-input" : "overlay-sub-input",
+                        which === "head" ? "overlay-headline-input" : which === "sub" ? "overlay-sub-input" : "business-name-input",
                       );
                       el?.scrollIntoView({ behavior: "smooth", block: "center" });
                       (el as HTMLInputElement | null)?.focus();
                     }}
                     className="absolute cursor-grab px-4 active:cursor-grabbing"
                     style={{
+                      fontFamily: overlayFontStack,
                       color: overlayColor,
                       textAlign: overlayAlign,
                       textShadow: "0 2px 8px rgba(0,0,0,0.75)",
@@ -1062,6 +1119,15 @@ function CreatePageInner() {
                           }`}
                         >
                           {overlayHeadline}
+                        </p>,
+                      )}
+                    {showBrandName && businessName.trim() &&
+                      layer(
+                        "brand",
+                        overlayCustomBrand,
+                        92,
+                        <p className="font-bold leading-snug text-lg sm:text-xl">
+                          {businessName}
                         </p>,
                       )}
                     {overlaySub.trim() &&
@@ -1104,6 +1170,7 @@ function CreatePageInner() {
             onClick={() => {
               setOverlayCustomHead(null);
               setOverlayCustomSub(null);
+              setOverlayCustomBrand(null);
             }}
             className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
           >

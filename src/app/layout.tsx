@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_Myanmar } from "next/font/google";
+import { Inter, Noto_Sans_Myanmar, Padauk, Noto_Serif_Myanmar, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import PwaRegister from "@/components/PwaRegister";
@@ -11,6 +11,26 @@ const myanmar = Noto_Sans_Myanmar({
   variable: "--font-myanmar",
   subsets: ["myanmar"],
   weight: ["400", "600", "700"],
+});
+// Overlay-text fonts (see /create font select): Padauk is a
+// Myanmar-friendly sans, Noto Serif Myanmar is a Myanmar serif,
+// Playfair Display is an English display serif (Burmese letters
+// fall back to Noto Sans Myanmar in its stack, so Burmese text
+// never breaks when Playfair is chosen).
+const padauk = Padauk({
+  variable: "--font-padauk",
+  subsets: ["latin", "myanmar"],
+  weight: ["400", "700"],
+});
+const serifMyanmar = Noto_Serif_Myanmar({
+  variable: "--font-serif-myanmar",
+  subsets: ["myanmar"],
+  weight: ["400", "700"],
+});
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -45,7 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="my"
-      className={`${inter.variable} ${myanmar.variable} h-full antialiased`}
+      className={`${inter.variable} ${myanmar.variable} ${padauk.variable} ${serifMyanmar.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white dark:bg-[#1b1c48] text-thukha-indigo dark:text-[#f6f7fb]">
         {/* No-flash theme + language script: apply the saved (or
