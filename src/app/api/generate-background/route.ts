@@ -244,6 +244,7 @@ function buildPrompt(
   channel?: string,
   hasReferences?: boolean,
   overlayText?: string,
+  renderText?: boolean,
 ) {
   // Privacy: nothing personal ever reaches the AI provider. Strip
   // phones/emails from every text field first (see lib/privacy.ts);
@@ -268,17 +269,21 @@ function buildPrompt(
       ? "Keep the reference subjects recognizable and undistorted — do not change the product itself, only its scene/presentation."
       : "",
     `Style: ${styleText}.`,
-    // Text-first flow: the overlay text guides the scene's mood
-    // only (celebration for a sale, calm for beauty, etc.). It is
-    // NEVER rendered in the image — the browser overlays it later.
-    overlayText
-      ? `Scene mood from the message that will be overlaid later (do NOT draw these words): ${overlayText}.`
-      : "",
-    "Hard rules: no text, no letters, no numbers, no logo, no watermark,",
-    "no brand name in the image. Leave clean empty space at the top and",
-    "centre where a headline will be overlaid later. Do not draw any",
-    "person's face in a way that looks like a real identifiable person,",
-    "and avoid stereotypes — show ordinary, respectful Myanmar/Thai settings.",
+    // AI-text mode (2026-11-02, user request: let AI write the
+    // text in the image): render the text itself, large and
+    // clear, in a beautiful font. Overlay mode (default before
+    // this change) keeps the old behaviour — text guides mood
+    // only and is NEVER rendered, the browser overlays it later
+    // with 100% correct Burmese. AI-drawn Burmese may garble;
+    // the UI warns about this next to the toggle.
+    renderText && overlayText
+      ? `Render this text in the image, large, clear, and correctly spelled, in a beautiful font: "${overlayText}". Render only this text — no other words.`
+      : overlayText
+        ? `Scene mood from the message that will be overlaid later (do NOT draw these words): ${overlayText}.`
+        : "",
+    renderText && overlayText
+      ? "Hard rules: no logo, no watermark, no other text besides the text above. Do not draw any person's face in a way that looks like a real identifiable person, and avoid stereotypes — show ordinary, respectful Myanmar/Thai settings."
+      : "Hard rules: no text, no letters, no numbers, no logo, no watermark, no brand name in the image. Leave clean empty space at the top and centre where a headline will be overlaid later. Do not draw any person's face in a way that looks like a real identifiable person, and avoid stereotypes — show ordinary, respectful Myanmar/Thai settings.",
   ].join(" ");
 }
 
@@ -294,6 +299,7 @@ export async function POST(request: Request) {
       channel?: string;
       referenceImages?: string[];
       overlayText?: string;
+      renderText?: boolean;
       authToken?: string;
     };
     const userPrompt = (body.prompt ?? "").trim();
@@ -361,7 +367,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const prompt = buildPrompt(userPrompt, body.style ?? "photorealistic", body.businessType ?? "", body.businessName, body.goal, body.channel, parsedRefs.length > 0, body.overlayText?.slice(0, 200));
+    const prompt = buildPrompt(userPrompt, body.style ?? "photorealistic", body.businessType ?? "", body.businessName, body.goal, body.channel, parsedRefs.length > 0, body.overlayText?.slice(0, 200), body.renderText === true);
 
     // Cloudflare Workers AI (free, FLUX.1 schnell, text-to-image only):
     // it cannot edit a reference image, so a request WITH references

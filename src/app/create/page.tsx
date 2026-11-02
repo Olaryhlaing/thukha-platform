@@ -231,11 +231,19 @@ function CreatePageInner() {
   const [overlayBg, setOverlayBg] = useState<"none" | "dark" | "light">("none");
   // Overlay font, chosen by the customer for the text they add
   // (headline, subheadline, brand name — all three share it, so
-  // the promo looks like one design, not three). Default is the
-  // current sans; the other stacks always end in a font that has
-  // Burmese glyphs, so Burmese text never falls back to a broken
+  // the promo looks like one design, not three). Default is now
+  // Padauk (2026-11-02, user request: beautiful font on the AI
+  // image output) — designed for Burmese, elegant and readable —
+  // so a customer who never touches the Font select still gets
+  // a beautiful overlay, in preview and in the PNG download.
+  // The other stacks always end in a font that has Burmese
+  // glyphs, so Burmese text never falls back to a broken
   // system font.
-  const [overlayFont, setOverlayFont] = useState<"default" | "padauk" | "serif" | "playfair">("default");
+  const [overlayFont, setOverlayFont] = useState<"default" | "padauk" | "serif" | "playfair">("padauk");
+  // AI-text mode (2026-11-02, user request: let AI write the
+  // text in the image), default ON. OFF = Overlay mode: the
+  // browser draws the text with 100% correct Burmese.
+  const [aiWritesText, setAiWritesText] = useState(true);
   const overlayFontStack =
     overlayFont === "padauk"
       ? '"Padauk", "Noto Sans Myanmar", sans-serif'
@@ -469,9 +477,11 @@ function CreatePageInner() {
           goal,
           channel,
           referenceImages,
-          // Text-first: the text typed above is sent only as scene
-          // mood — the server must NOT render it in the image.
-          overlayText: [overlayHeadline, overlaySub].map((t) => t.trim()).filter(Boolean).join(" — "),
+          // AI-text mode: the text typed above is sent to be
+          // rendered in the image. Overlay mode: the server must
+          // NOT render it — it only guides scene mood.
+          renderText: aiWritesText,
+          overlayText: [overlayHeadline, overlaySub, showBrandName ? businessName : ""].map((t) => t.trim()).filter(Boolean).join(" — "),
           ...(authToken ? { authToken } : {}),
         }),
       });
@@ -525,13 +535,22 @@ function CreatePageInner() {
       setOverlayMessage(t("create.errGuestDownload"));
       return;
     }
+    if (aiWritesText) {
+      // Text already drawn by the AI — download the image as-is.
+      setOverlayMessage("");
+      const a = document.createElement("a");
+      a.href = selected;
+      a.download = "thukha-promo.png";
+      a.click();
+      return;
+    }
     if (!overlayHeadline.trim() && !overlaySub.trim() && !(showBrandName && businessName.trim())) {
       setOverlayMessage(t("create.errNeedOverlayText"));
       return;
     }
     setOverlayMessage("");
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       const canvas = document.createElement("canvas");
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
@@ -583,6 +602,16 @@ function CreatePageInner() {
         if (line) lines.push(line);
         return lines;
       };
+      // Load the beautiful font before measuring/drawing, so
+      // the PNG uses Padauk (or the customer's chosen font),
+      // not a silent sans fallback.
+      try {
+        await document.fonts.load(`bold ${headlineSize}px ${font}`);
+        await document.fonts.load(`400 ${subSize}px ${font}`);
+        await document.fonts.load(`bold ${Math.round(headlineSize * 0.6)}px ${font}`);
+      } catch {
+        // Font API unavailable: draw anyway with the fallback stack.
+      }
       const headlineLines = overlayHeadline.trim()
         ? drawLines(overlayHeadline.trim(), headlineSize, true)
         : [];
@@ -898,6 +927,20 @@ function CreatePageInner() {
               <option value="light">{t("create.bgLight")}</option>
             </select>
           </label>
+          <div className="col-span-2 flex flex-col gap-1">
+            <label className="flex items-center gap-2 text-sm font-bold">
+              <input
+                type="checkbox"
+                checked={aiWritesText}
+                onChange={(e) => setAiWritesText(e.target.checked)}
+                className="h-5 w-5 accent-thukha-violet"
+              />
+              {t("create.aiText")}
+            </label>
+            <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+              {t("create.aiTextHelp")}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -1037,6 +1080,11 @@ function CreatePageInner() {
                 : t("create.previewPlaceholderNoImage")}
             </div>
           )}
+              {/* AI-text mode: hide browser layers once an AI image
+                  exists (text already in it); before generation
+                  and in Overlay mode, layers show as before. */}
+              {(!aiWritesText || !selected) && (
+              <>
               {/* Separate layers: headline and subheadline are two
                   independent draggable elements, one by one. Each
                   uses the same anchor model as the canvas download:
@@ -1146,6 +1194,7 @@ function CreatePageInner() {
                   </>
                 );
               })()}
+              </>)}
           {selected && isGuest && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
               <div className="absolute inset-x-0 top-0 bg-black/60 py-2 text-center text-xs font-bold text-white">
