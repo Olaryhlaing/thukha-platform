@@ -25,7 +25,7 @@ export default function SiteHeader() {
 
   return (
     <header className="border-b border-thukha-lilac/30">
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-3 sm:flex-row sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:flex-row">
         <Link href="/" className="flex items-center gap-2 text-base font-bold">
           <Image
             src="/thukha-logo.png"
@@ -51,12 +51,6 @@ export default function SiteHeader() {
                 logged-in admins (server-side role check), so
                 guests and customers never see admin navigation. */}
             <AuthNav />
-            <Link
-              href="/create"
-              className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac"
-            >
-              {t("nav.start")}
-            </Link>
           </nav>
         )}
         <div className="flex items-center gap-2">

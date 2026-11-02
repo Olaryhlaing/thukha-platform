@@ -56,7 +56,10 @@ export default function AuthNav() {
   if (!loaded) return null;
   if (!supabaseConfigured()) {
     return (
-      <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
+      <>
+        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
+        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
+      </>
     );
   }
   if (!email) {
@@ -64,6 +67,7 @@ export default function AuthNav() {
       <>
         <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
         <Link href="/signup" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.signup")}</Link>
+        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
       </>
     );
   }
