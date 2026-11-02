@@ -86,6 +86,12 @@ export default function AuthNav() {
           await getSupabase()?.auth.signOut();
           setEmail(null);
           setIsAdmin(false);
+          // Logout goes straight to /login (customer and admin
+          // alike). A full page load, not just a state change, so
+          // no page keeps stale logged-in state after logout —
+          // /create used to keep showing server tokens and /admin
+          // used to keep showing stats until a manual refresh.
+          window.location.assign("/login");
         }}
         className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
       >{t("nav.logout")}</button>
