@@ -25,7 +25,20 @@ export default function SiteHeader() {
 
   return (
     <header className="border-b border-thukha-lilac/30">
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:flex-row">
+      {/* English/Dark toggles sit at the right edge on every
+         page: full-width header (no max-w-6xl centring), and on
+         the stacked mobile header they are self-end (right).
+         Auth pages have no nav, so theirs is a single row
+         (logo left, toggles right); other pages keep the
+         stacked-below-lg layout, so the long logged-in nav
+         never gets cramped into a single row on mobile. */}
+      <div
+        className={
+          isAuthPage
+            ? "flex w-full flex-row items-center justify-between gap-2 px-3 py-3"
+            : "flex w-full flex-col items-center justify-between gap-2 px-3 py-3 lg:flex-row"
+        }
+      >
         <Link href="/" className="flex items-center gap-2 text-base font-bold">
           <Image
             src="/thukha-logo.png"
@@ -53,7 +66,7 @@ export default function SiteHeader() {
             <AuthNav />
           </nav>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end lg:self-center">
           <LanguageToggle />
           <ThemeToggle />
         </div>
