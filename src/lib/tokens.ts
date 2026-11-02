@@ -24,6 +24,14 @@
 
 export const START_TOKENS = 100;
 export const GUEST_START_TOKENS = 50;
+/* Guests may generate only GUEST_MAX_GENERATIONS images in this
+   browser (localStorage key "thukha-guest-generations", counted
+   only on a successful image, never on failure). Honest limit:
+   this is browser-only, so clearing site data or switching
+   browser/device resets it — it stops casual repeated use, it
+   does not stop a determined person. Only login (server tokens)
+   gives a real per-account limit. */
+export const GUEST_MAX_GENERATIONS = 1;
 
 export function tokenCost(input: {
   prompt: string;

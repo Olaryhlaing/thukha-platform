@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { START_TOKENS, GUEST_START_TOKENS, tokenCost } from "@/lib/tokens";
+import { START_TOKENS, GUEST_START_TOKENS, GUEST_MAX_GENERATIONS, tokenCost } from "@/lib/tokens";
 import { TEMPLATES } from "@/lib/templates";
 import { getSupabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -198,6 +198,14 @@ function CreatePageInner() {
     if (!Number.isFinite(stored) || stored < 0) return GUEST_START_TOKENS;
     return Math.min(stored, GUEST_START_TOKENS);
   });
+  // Guest generation count (browser only): how many images this
+  // browser has already generated as a guest. Counted only on
+  // success, never on failure; the test refill does NOT reset it.
+  const [guestGenerations, setGuestGenerations] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const stored = Number(localStorage.getItem("thukha-guest-generations"));
+    return Number.isFinite(stored) && stored > 0 ? Math.floor(stored) : 0;
+  });
   const [promptSuggestions, setPromptSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   // Server tokens (logged-in) take over from browser tokens (guest).
@@ -298,6 +306,9 @@ function CreatePageInner() {
   // Guest = no Supabase session. Guests may generate and preview,
   // but they must NOT download a clean image (see below).
   const isGuest = !authToken;
+  // Guest limit: 1 image only per browser. Logged-in customers
+  // and admins are never limited by this (isGuest is false).
+  const guestUsedUp = isGuest && !isUnlimited && guestGenerations >= GUEST_MAX_GENERATIONS;
 
   // Load the image provider once, so /create can warn about the
   // Cloudflare reference-image limit before the user generates.
@@ -403,10 +414,17 @@ function CreatePageInner() {
       setAiError(t("create.errNeedPrompt"));
       return;
     }
+    // Guest limit first: after 1 guest image, only login helps —
+    // this error deliberately has no "Token" in it, so the token
+    // refill button (shown only for Token errors) never appears.
+    if (guestUsedUp) {
+      setAiError(t("create.errGuestLimit"));
+      return;
+    }
     // Token check first: insufficient balance blocks generation, and
     // a failed generation never deducts (deduct only on success).
     if (effectiveTokens < cost) {
-      setAiError(t("create.errTokenNotEnough", { cost, balance: effectiveTokens }));
+      setAiError(isGuest ? t("create.errGuestLimit") : t("create.errTokenNotEnough", { cost, balance: effectiveTokens }));
       return;
     }
     setAiLoading(true);
@@ -448,6 +466,16 @@ function CreatePageInner() {
         setServerTokens(data.serverBalance);
       } else {
         spendTokens(data.cost ?? cost);
+        // Guest only: this branch runs only without a server
+        // balance, so it is a guest success — count it toward the
+        // 1-image guest limit. Failures return above, uncounted.
+        if (!authToken) {
+          setGuestGenerations((prev) => {
+            const next = prev + 1;
+            localStorage.setItem("thukha-guest-generations", String(next));
+            return next;
+          });
+        }
       }
       setAiImages((prev) => [data.imageUrl as string, ...prev].slice(0, 4));
       setSelected(data.imageUrl);
@@ -650,11 +678,13 @@ function CreatePageInner() {
         <p className="leading-7 text-white/85">
           {t("create.subtitle")}
         </p>
-        <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
-          {isUnlimited
-            ? t("create.tokenPillUnlimited")
-            : t("create.tokenPill", { tokens: effectiveTokens, start: serverTokens !== null ? START_TOKENS : GUEST_START_TOKENS, mode: serverTokens !== null ? t("create.modeServer") : t("create.modeBrowser"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
-        </p>
+        {!isGuest && (
+          <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
+            {isUnlimited
+              ? t("create.tokenPillUnlimited")
+              : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
+          </p>
+        )}
       </header>
 
       {/* Side preview (2026-11-01, user request: preview beside, not
@@ -882,14 +912,32 @@ function CreatePageInner() {
             {t("create.freeModeRefWarning")}
           </p>
         )}
-        <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
-          {isUnlimited
-            ? t("create.costNoteAdmin")
-            : t("create.costNote", { cost })}
-        </p>
-        <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50">
-          {aiLoading ? t("create.generateLoading") : isUnlimited ? t("create.generateAdmin") : t("create.generate", { cost })}
-        </button>
+        {!isGuest && (
+          <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
+            {isUnlimited
+              ? t("create.costNoteAdmin")
+              : t("create.costNote", { cost })}
+          </p>
+        )}
+        {isGuest && !guestUsedUp && (
+          <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+            {t("create.guestLimitNote")}
+          </p>
+        )}
+        {guestUsedUp ? (
+          <>
+            <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
+              {t("create.guestLimitUsed")}
+            </p>
+            <a href="/login" className="flex min-h-[44px] items-center justify-center rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
+              {t("create.guestLimitCta")}
+            </a>
+          </>
+        ) : (
+          <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50">
+            {aiLoading ? t("create.generateLoading") : isUnlimited ? t("create.generateAdmin") : isGuest ? t("create.generateGuest") : t("create.generate", { cost })}
+          </button>
+        )}
         {aiError && (
           <div className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
             <p className="font-bold">{aiError}</p>
