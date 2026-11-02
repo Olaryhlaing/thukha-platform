@@ -39,3 +39,47 @@ body {
   font-family: var(--font-sans);
   line-height: 1.6;
 }
+
+/* Subtle animations (brand-consistent, no library, no layout shift):
+   every page fades up once on load, buttons lift slightly on
+   hover and press in on click, and a newly generated preview image
+   fades in (its key changes, so the animation re-runs per image).
+   Reduced-motion users get none of it, by their system setting. */
+@keyframes thu-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes thu-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+main {
+  animation: thu-fade-up 0.45s ease-out both;
+}
+.anim-fade-in {
+  animation: thu-fade-in 0.4s ease-out both;
+}
+button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+a.rounded-full {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+a.rounded-full:hover {
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  main,
+  .anim-fade-in,
+  button,
+  a.rounded-full {
+    animation: none !important;
+    transition: none !important;
+  }
+}

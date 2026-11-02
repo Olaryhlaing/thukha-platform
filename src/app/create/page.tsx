@@ -146,7 +146,7 @@ const inputClass =
   "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
 const labelClass = "text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]";
 const sectionClass =
-  "flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white dark:bg-[#1b1c48] p-4 shadow-sm sm:p-5";
+  "flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white dark:bg-[#1b1c48] p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5";
 
 export default function CreatePage() {
   return (
@@ -990,7 +990,7 @@ function CreatePageInner() {
             </a>
           </>
         ) : (
-          <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50">
+          <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50 disabled:animate-pulse">
             {aiLoading ? t("create.generateLoading") : isUnlimited ? t("create.generateAdmin") : isGuest ? t("create.generateGuest") : t("create.generate", { cost })}
           </button>
         )}
@@ -1029,7 +1029,7 @@ function CreatePageInner() {
         <div ref={previewRef} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="relative mx-auto w-full max-w-[480px] select-none">
           {selected ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={selected} alt={t("create.previewAlt")} draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
+            <img key={selected} src={selected} alt={t("create.previewAlt")} draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="anim-fade-in w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
           ) : (
             <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-thukha-violet to-thukha-lilac p-6 text-center font-bold text-white shadow-xl shadow-thukha-violet/30">
               {overlayHeadline.trim() || overlaySub.trim()
