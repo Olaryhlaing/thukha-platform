@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { tokenCost, START_TOKENS } from "@/lib/tokens";
+import { stripPersonalData } from "@/lib/privacy";
 import {
   getServiceSupabase,
   getUserFromToken,
@@ -244,6 +245,15 @@ function buildPrompt(
   hasReferences?: boolean,
   overlayText?: string,
 ) {
+  // Privacy: nothing personal ever reaches the AI provider. Strip
+  // phones/emails from every text field first (see lib/privacy.ts);
+  // the browser overlay still shows the user's original text.
+  userPrompt = stripPersonalData(userPrompt);
+  businessType = stripPersonalData(businessType);
+  businessName = businessName ? stripPersonalData(businessName) : businessName;
+  goal = goal ? stripPersonalData(goal) : goal;
+  channel = channel ? stripPersonalData(channel) : channel;
+  overlayText = overlayText ? stripPersonalData(overlayText) : overlayText;
   const styleText = STYLE_PROMPTS[style] ?? STYLE_PROMPTS.photorealistic;
   const business = businessType ? ` for a ${businessType} business` : "";
   // Name/goal/channel guide the scene only — they are never rendered

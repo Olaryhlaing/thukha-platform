@@ -72,6 +72,7 @@ export default function AuthNav() {
       {isAdmin && (
         <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.admin")}</Link>
       )}
+      <Link href="/account" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.account")}</Link>
       <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70 dark:text-white/70">
         {email}
       </span>

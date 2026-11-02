@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Myanmar } from "next/font/google";
+import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import PwaRegister from "@/components/PwaRegister";
 import LanguageProvider from "@/components/LanguageProvider";
@@ -63,7 +64,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           <div className="flex flex-1 flex-col">{children}</div>
           <footer className="border-t border-thukha-lilac/30 py-6 text-center text-sm text-thukha-indigo/60 dark:text-white/60">
-            ThuKha Platform
+            ThuKha Platform ·{" "}
+            <Link href="/privacy" className="font-bold text-thukha-violet dark:text-thukha-lilac">
+              Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ
+            </Link>
           </footer>
         </LanguageProvider>
       </body>
