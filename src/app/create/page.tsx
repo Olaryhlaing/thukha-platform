@@ -415,6 +415,10 @@ function CreatePageInner() {
           businessName,
           goal,
           channel,
+          // Mode-aware suggestions: in AI-text mode they must
+          // not say "no text" (that would contradict the render
+          // instruction); in Overlay mode they must.
+          renderText: aiWritesText,
         }),
       });
       const data = (await res.json()) as { options?: string[]; error?: string };
