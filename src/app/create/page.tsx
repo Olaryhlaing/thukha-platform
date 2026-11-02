@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { START_TOKENS, tokenCost } from "@/lib/tokens";
+import { START_TOKENS, GUEST_START_TOKENS, tokenCost } from "@/lib/tokens";
 import { TEMPLATES } from "@/lib/templates";
 import { getSupabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -186,13 +186,17 @@ function CreatePageInner() {
   const [aiImages, setAiImages] = useState<string[]>([]);
   const [selected, setSelected] = useState("");
   // ThuKha tokens (customer's own credit, not the Gemini key):
-  // start 100, stored in this browser only for the prototype.
-  // Lazy init: server renders 100, browser reads its own balance.
-  // suppressHydrationWarning is set on the balance pill below.
+  // logged-in customers start 100 on the server; guests start 50
+  // in this browser only (GUEST_START_TOKENS). An old browser
+  // balance above 50 is capped to 50, so old guests do not keep
+  // the old 100. Lazy init: server renders 50, browser reads its
+  // own (capped) balance. suppressHydrationWarning is set on the
+  // balance pill below.
   const [tokens, setTokens] = useState(() => {
-    if (typeof window === "undefined") return START_TOKENS;
+    if (typeof window === "undefined") return GUEST_START_TOKENS;
     const stored = Number(localStorage.getItem("thukha-tokens"));
-    return Number.isFinite(stored) && stored >= 0 ? stored : START_TOKENS;
+    if (!Number.isFinite(stored) || stored < 0) return GUEST_START_TOKENS;
+    return Math.min(stored, GUEST_START_TOKENS);
   });
   const [promptSuggestions, setPromptSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -334,12 +338,12 @@ function CreatePageInner() {
     });
   }
 
-  // Test-only refill: restores the starting 100 tokens in this
-  // browser. Remove this button before a real launch — a real
-  // top-up must go through payment/admin, not a free button.
+  // Test-only refill: restores the starting guest tokens (50)
+  // in this browser. Remove this button before a real launch — a
+  // real top-up must go through payment/admin, not a free button.
   function refillTestTokens() {
-    localStorage.setItem("thukha-tokens", String(START_TOKENS));
-    setTokens(START_TOKENS);
+    localStorage.setItem("thukha-tokens", String(GUEST_START_TOKENS));
+    setTokens(GUEST_START_TOKENS);
     setAiError("");
   }
 
@@ -649,7 +653,7 @@ function CreatePageInner() {
         <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
           {isUnlimited
             ? t("create.tokenPillUnlimited")
-            : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: serverTokens !== null ? t("create.modeServer") : t("create.modeBrowser"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
+            : t("create.tokenPill", { tokens: effectiveTokens, start: serverTokens !== null ? START_TOKENS : GUEST_START_TOKENS, mode: serverTokens !== null ? t("create.modeServer") : t("create.modeBrowser"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
         </p>
       </header>
 

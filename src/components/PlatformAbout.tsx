@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 
 /* Shared ThuKha summary shown on Login and Signup (the X-Panda
@@ -24,6 +25,9 @@ export default function PlatformAbout() {
       <p className="text-sm leading-6 text-white/80">
         {t("about.tokens")}
       </p>
+      <Link href="/create" className="text-sm font-bold text-thukha-lilac">
+        {t("about.guest")}
+      </Link>
     </section>
   );
 }

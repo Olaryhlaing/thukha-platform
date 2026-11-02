@@ -15,9 +15,15 @@
    Prototype note: the balance lives in the browser's localStorage
    (key "thukha-tokens"), so it is per device/browser and can be
    reset by clearing site data. The real version needs Supabase
-   auth + a server-side balance so a customer cannot reset it. */
+   auth + a server-side balance so a customer cannot reset it.
+
+   Guests are different from customers: a guest (no login) starts
+   with only GUEST_START_TOKENS (50) in this browser, while a
+   logged-in customer starts with START_TOKENS (100) on the server.
+   The server code must never use GUEST_START_TOKENS. */
 
 export const START_TOKENS = 100;
+export const GUEST_START_TOKENS = 50;
 
 export function tokenCost(input: {
   prompt: string;

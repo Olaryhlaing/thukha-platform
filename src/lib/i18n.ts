@@ -48,6 +48,7 @@ const my: Dict = {
   "about.step3": "၃။ PNG download လုပ်ပြီး တင်ပါ",
   "about.burmesePromise": "မြန်မာစာကို AI ပုံထဲမှာ တိုက်ရိုက် မရေးဘူး — ပုံထုတ်ပြီးမှ သီးသန့် ထပ်ဆွဲပေးတာမို့ စာလုံးပေါင်း ၁၀၀% မှန်တယ်၊ ဘယ်တော့မှ မပျက်ဘူး။",
   "about.tokens": "Signup လုပ်တာနဲ့ token 100 စတင်ရမယ်။ ပုံတစ်ပုံကို 10–35 token ကျသင့်တယ်။ Login ထားရင် token က သင့် account နဲ့ ချိတ်ထားတယ်။",
+  "about.guest": "Account မရှိသေးရင် /create မှာ guest အနေနဲ့ အရင် စမ်းကြည့်ပါ →",
   // Login
   "login.title": "Login",
   "login.notConnectedNote": "login လုပ်လို့ရမယ်။ အခု guest အနေနဲ့ /create မှာ ဆက်သုံးလို့ရတယ်။",
@@ -242,7 +243,7 @@ const my: Dict = {
   "create.generateAdmin": "AI ပုံ ဖန်တီးပါ (Admin — အလကား)",
   "create.generate": "AI ပုံ ဖန်တီးပါ ({cost} token)",
   "create.tokenOut": "Token ကုန်သွားလို့ ပုံထုတ်လို့ မရတော့ပါ။ အစစ်မှာ token ဝယ်ဖြည့်ရမယ်။",
-  "create.refillTest": "Token 100 ပြန်ဖြည့် (စမ်းသပ်ဖို့သာ)",
+  "create.refillTest": "Token 50 ပြန်ဖြည့် (စမ်းသပ်ဖို့သာ)",
   "create.serverTokenNote": "Login ထားတဲ့ account ရဲ့ token က server ထဲမှာပဲ ရှိတယ် — browser ခလုတ်နဲ့ ပြန်ဖြည့်လို့ မရဘူး။",
   "create.preview": "Preview",
   "create.previewFree": "ဒီ Preview က အလကားပါ — token မဖြတ်ဘူး။",
@@ -314,6 +315,7 @@ const en: Dict = {
   "about.step3": "3. Download the PNG and post it",
   "about.burmesePromise": "Burmese text is never drawn inside the AI image — it is overlaid separately after generation, so the spelling is always 100% correct, never garbled.",
   "about.tokens": "You start with 100 tokens on signup. One image costs 10–35 tokens. When you log in, your tokens stay with your account.",
+  "about.guest": "No account yet? Try /create as a guest first →",
   // Login
   "login.title": "Login",
   "login.notConnectedNote": "to log in. For now you can keep using /create as a guest.",
@@ -508,7 +510,7 @@ const en: Dict = {
   "create.generateAdmin": "Generate AI image (Admin — free)",
   "create.generate": "Generate AI image ({cost} tokens)",
   "create.tokenOut": "Tokens ran out, so images can no longer be generated. In the real version you will need to buy tokens.",
-  "create.refillTest": "Refill 100 tokens (test only)",
+  "create.refillTest": "Refill 50 tokens (test only)",
   "create.serverTokenNote": "A logged-in account's tokens live on the server — the browser button cannot refill them.",
   "create.preview": "Preview",
   "create.previewFree": "This preview is free — no tokens are deducted.",
