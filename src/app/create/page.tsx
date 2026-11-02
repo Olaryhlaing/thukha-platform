@@ -1079,9 +1079,6 @@ function CreatePageInner() {
             )}
             {isGuest ? (
               <>
-                <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">
-                  {t("create.downloadGuestNote")}
-                </p>
                 <a href="/login" className="flex min-h-[44px] items-center justify-center rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
                   {t("create.downloadLoginCta")}
                 </a>
@@ -1102,11 +1099,7 @@ function CreatePageInner() {
             </button>
             {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}
           </>
-        ) : (
-          <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">
-            {t("create.saveHelp")}
-          </p>
-        )}
+        ) : null}
         {aiImages.length > 1 && (
           <div className="grid grid-cols-4 gap-3">
             {aiImages.map((url, i) => (
