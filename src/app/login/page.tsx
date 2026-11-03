@@ -111,7 +111,12 @@ export default function LoginPage() {
   return (
     <main className="flex flex-1 flex-col md:flex-row">
       <HeroSide />
-      <div className="flex items-center justify-center bg-white p-8 dark:bg-[#1b1c48] sm:p-12 md:w-1/2">
+      {/* Dark mode: form side is also Midnight Indigo (the hero
+          colour), not the lighter #1b1c48 surface — otherwise
+          the dark login page still looks two-toned and the
+          previous body-only change is barely visible. Inputs
+          keep #1b1c48, so they stand out on the indigo form. */}
+      <div className="flex items-center justify-center bg-white p-8 dark:bg-thukha-indigo sm:p-12 md:w-1/2">
         <div className="w-full max-w-md space-y-8">
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
