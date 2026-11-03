@@ -22,18 +22,18 @@ function HeroSide() {
   const { t } = useLanguage();
   const steps = [t("about.step1"), t("about.step2"), t("about.step3")];
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden border-b border-white/10 bg-thukha-indigo p-8 text-white sm:p-12 md:w-1/2 md:border-b-0 md:border-r">
+    <div className="relative flex flex-col justify-between overflow-hidden border-b border-thukha-lilac/40 bg-[#ede9fe] p-8 text-thukha-indigo sm:p-12 md:w-1/2 md:border-b-0 md:border-r dark:border-white/10 dark:bg-thukha-indigo dark:text-white">
       <div className="relative z-10">
         <p className="text-xl font-bold">ThuKha Platform</p>
         <div className="mt-12">
-          <span className="inline-flex items-center rounded-full border border-thukha-lilac/50 bg-white/10 px-3 py-1 text-xs font-bold text-thukha-lilac">
+          <span className="inline-flex items-center rounded-full border border-thukha-violet/30 bg-white/60 px-3 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/50 dark:bg-white/10 dark:text-thukha-lilac">
             {t("login.heroPill")}
           </span>
           <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
             {t("login.heroTitle1")} <br />
-            <span className="text-thukha-lilac">{t("login.heroTitle2")}</span>
+            <span className="text-thukha-violet dark:text-thukha-lilac">{t("login.heroTitle2")}</span>
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/80 sm:text-base">
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-thukha-indigo/80 sm:text-base dark:text-white/80">
             {t("login.heroText")}
           </p>
         </div>
@@ -41,8 +41,8 @@ function HeroSide() {
 
       <div className="relative z-10 my-8 space-y-4">
         {steps.map((step, i) => (
-          <div key={step} className="flex items-center gap-3 text-sm text-white/90">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-thukha-lilac/50 bg-white/10 font-bold text-thukha-lilac">
+          <div key={step} className="flex items-center gap-3 text-sm text-thukha-indigo/90 dark:text-white/90">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-thukha-violet/30 bg-white/60 font-bold text-thukha-violet dark:border-thukha-lilac/50 dark:bg-white/10 dark:text-thukha-lilac">
               {i + 1}
             </div>
             <span>{step}</span>
@@ -50,9 +50,9 @@ function HeroSide() {
         ))}
       </div>
 
-      <div className="relative z-10 border-t border-white/10 pt-6">
-        <p className="text-sm leading-6 text-white/80">{t("about.tokens")}</p>
-        <p className="mt-3 text-xs leading-6 text-white/60">{t("login.heroQuote")}</p>
+      <div className="relative z-10 border-t border-thukha-indigo/10 pt-6 dark:border-white/10">
+        <p className="text-sm leading-6 text-thukha-indigo/80 dark:text-white/80">{t("about.tokens")}</p>
+        <p className="mt-3 text-xs leading-6 text-thukha-indigo/60 dark:text-white/60">{t("login.heroQuote")}</p>
       </div>
 
       {/* Background glows, ThuKha violet/lilac like X-Panda's teal glows. */}
