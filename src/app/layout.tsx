@@ -67,7 +67,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="my"
       className={`${inter.variable} ${myanmar.variable} ${padauk.variable} ${serifMyanmar.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white dark:bg-[#1b1c48] text-thukha-indigo dark:text-[#f6f7fb]">
+      {/* Dark mode background is Midnight Indigo (#10113D, the
+          login hero colour in the user's screenshot), not the
+          lighter #1b1c48 surface — that was inconsistent with
+          globals.css (.dark --background is already #10113d).
+          Surfaces (cards, login form side, inputs) stay #1b1c48
+          so they stand out against the indigo background. */}
+      <body className="min-h-full flex flex-col bg-white dark:bg-thukha-indigo text-thukha-indigo dark:text-[#f6f7fb]">
         {/* No-flash theme + language script: apply the saved (or
             device) theme and the saved language before first
             paint, so the page never flashes light and then flips
