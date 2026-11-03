@@ -88,8 +88,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PwaRegister />
         <LanguageProvider>
           <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <footer className="border-t border-thukha-lilac/30 py-6 text-center text-sm text-thukha-indigo/60 dark:text-white/60">
+          <div className="flex flex-1 flex-col pb-24">{children}</div>
+          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-thukha-lilac/30 bg-white py-6 text-center text-sm text-thukha-indigo/60 dark:bg-thukha-indigo dark:text-white/60">
             ThuKha Platform ·{" "}
             <Link href="/privacy" className="font-bold text-thukha-violet dark:text-thukha-lilac">
               Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ

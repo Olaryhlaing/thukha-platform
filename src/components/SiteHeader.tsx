@@ -24,7 +24,7 @@ export default function SiteHeader() {
   const { t } = useLanguage();
 
   return (
-    <header className="border-b border-thukha-lilac/30">
+    <header className="sticky top-0 z-50 border-b border-thukha-lilac/30 bg-white dark:bg-thukha-indigo">
       {/* English/Dark toggles sit at the right edge on every
          page: full-width header (no max-w-6xl centring), and on
          the stacked mobile header they are self-end (right).
