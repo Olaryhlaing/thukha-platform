@@ -52,7 +52,30 @@ export async function GET(request: Request) {
     await service
       .from("token_balances")
       .insert({ owner_id: user.id, balance: START_TOKENS });
-    return NextResponse.json({ mode: "server" as const, balance: START_TOKENS });
+    return NextResponse.json({ mode: "server" as const, balance: START_TOKENS, total: START_TOKENS });
   }
-  return NextResponse.json({ mode: "server" as const, balance: data.balance });
+  // Denominator for the /create pill: total tokens ever given to
+  // this customer, NOT the hardcoded 100. Balance = total - spent,
+  // and spent is exactly the sum of this customer's generation
+  // costs, so total = balance + spent. This is why a customer
+  // refilled to 200 shows 200/200 (not 200/100), and after
+  // spending 15 shows 185/200 (right side stays, left drops).
+  // No schema change needed — refills are already in the balance,
+  // generations are already logged with their cost. If the sum
+  // query fails, fall back to max(balance, 100) so the pill can
+  // never show balance > total again.
+  let total = Math.max(data.balance, START_TOKENS);
+  try {
+    const { data: gens } = await service
+      .from("generations")
+      .select("cost_tokens")
+      .eq("owner_id", user.id);
+    if (gens) {
+      const spent = gens.reduce((sum, g) => sum + (g.cost_tokens ?? 0), 0);
+      total = Math.max(data.balance + spent, START_TOKENS);
+    }
+  } catch {
+    // Fallback above already applies.
+  }
+  return NextResponse.json({ mode: "server" as const, balance: data.balance, total });
 }

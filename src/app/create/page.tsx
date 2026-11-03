@@ -210,6 +210,13 @@ function CreatePageInner() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   // Server tokens (logged-in) take over from browser tokens (guest).
   const [serverTokens, setServerTokens] = useState<number | null>(null);
+  // Total tokens ever given (start + refills), from /api/tokens.
+  // This is the pill denominator — it must NOT be the hardcoded
+  // START_TOKENS (100), or a refilled customer shows 200/100.
+  // It does not change when an image is generated (only the
+  // balance drops), and it only changes on a refill, which
+  // needs a page reload to show (same as the balance reload).
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
   // Admin accounts are unlimited (role=admin, server-side): no
   // balance check, no deduction — the pill shows ∞ instead of a number.
   const [isUnlimited, setIsUnlimited] = useState(false);
@@ -367,11 +374,12 @@ function CreatePageInner() {
       const res = await fetch("/api/tokens", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as { mode?: string; balance?: number; unlimited?: boolean };
+      const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
       if (json.mode === "server" && json.unlimited) {
         setIsUnlimited(true);
       } else if (json.mode === "server" && typeof json.balance === "number") {
         setServerTokens(json.balance);
+        if (typeof json.total === "number") setServerTotal(json.total);
       }
     });
   }, []);
@@ -761,7 +769,7 @@ function CreatePageInner() {
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
                 {isUnlimited
                   ? t("create.tokenPillUnlimited")
-                  : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
+                  : t("create.tokenPill", { tokens: effectiveTokens, start: Math.max(serverTotal ?? START_TOKENS, effectiveTokens), mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
               </span>
             </div>
           )}
