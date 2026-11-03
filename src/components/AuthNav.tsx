@@ -10,20 +10,28 @@ export default function AuthNav() {
   const router = useRouter();
   const { t } = useLanguage();
   const [email, setEmail] = useState<string | null>(null);
+  // Header shows the account NAME, not the email (owner request
+  // 2026-11-03, screenshot circled the email pill). Source:
+  // profiles.display_name from /api/me first, then the signup
+  // name in Supabase Auth metadata, then the email prefix —
+  // never blank, and never the full email if a name exists.
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
 
   async function refreshRole(token: string | undefined) {
     if (!token) {
       setIsAdmin(false);
+      setDisplayName(null);
       return;
     }
     try {
       const res = await fetch("/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as { role?: string };
+      const json = (await res.json()) as { role?: string; display_name?: string | null };
       setIsAdmin(res.ok && json.role === "admin");
+      if (res.ok && json.display_name) setDisplayName(json.display_name);
     } catch {
       setIsAdmin(false);
     }
@@ -34,12 +42,17 @@ export default function AuthNav() {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => {
       setEmail(data.session?.user.email ?? null);
+      const metaName = data.session?.user.user_metadata?.display_name as string | undefined;
+      if (metaName) setDisplayName(metaName);
       setLoaded(true);
       void refreshRole(data.session?.access_token);
     });
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setEmail(session?.user.email ?? null);
+        const metaName = session?.user.user_metadata?.display_name as string | undefined;
+        if (metaName) setDisplayName(metaName);
+        else if (!session) setDisplayName(null);
         void refreshRole(session?.access_token);
       },
     );
@@ -110,13 +123,16 @@ export default function AuthNav() {
       </Link>
       <span className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80">
         <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
-        <span className="max-w-[160px] truncate sm:max-w-[220px]">{email}</span>
+        <span className="max-w-[160px] truncate sm:max-w-[220px]">
+          {displayName ?? email.split("@")[0] ?? email}
+        </span>
       </span>
       <button
         type="button"
         onClick={async () => {
           await getSupabase()?.auth.signOut();
           setEmail(null);
+          setDisplayName(null);
           setIsAdmin(false);
           router.push("/login");
         }}
