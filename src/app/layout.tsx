@@ -4,6 +4,7 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import PwaRegister from "@/components/PwaRegister";
 import LanguageProvider from "@/components/LanguageProvider";
+import AmbientBackground from "@/components/AmbientBackground";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -51,7 +52,7 @@ export const viewport: Viewport = {
   themeColor: "#5946ED",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="my"
@@ -64,20 +65,26 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
         <PwaRegister />
+        <AmbientBackground />
         <LanguageProvider>
           <SiteHeader />
-          <div className="flex flex-1 flex-col pb-24">{children}</div>
-          {/* Fixed (not sticky) footer: sticky bottom-0 only shows
-              the footer at the end of a long page, while scrolling
-              the middle it disappears — that is why the previous
-              version looked like it was not working. Fixed keeps
-              it at the bottom of the screen on every page, with
-              the pb-24 above so it never covers content. */}
-          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-thukha-lilac/30 bg-white py-6 text-center text-sm text-thukha-indigo/60 dark:bg-thukha-indigo dark:text-white/60">
-            ThuKha Platform ·{" "}
-            <Link href="/privacy" className="font-bold text-thukha-violet dark:text-thukha-lilac">
-              Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ
-            </Link>
+          <div className="relative z-10 flex flex-1 flex-col pb-24">{children}</div>
+          {/* Fixed footer: glassmorphic with colorful animated gradient accent border */}
+          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-thukha-lilac/30 bg-white/90 py-4.5 text-center text-sm text-thukha-indigo/70 backdrop-blur-md dark:border-white/10 dark:bg-thukha-indigo/90 dark:text-white/70">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-thukha-violet via-pink-500 via-thukha-teal to-thukha-lilac bg-[length:200%_auto] animate-[thu-gradient-flow_6s_ease_infinite]" />
+            <div className="mx-auto flex flex-wrap items-center justify-center gap-2 px-4 sm:gap-3">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+                <span>ThuKha Platform</span>
+              </span>
+              <span className="text-thukha-lilac/60">·</span>
+              <Link
+                href="/privacy"
+                className="font-semibold text-thukha-violet transition-all duration-200 hover:text-thukha-blue hover:underline dark:text-thukha-lilac dark:hover:text-thukha-teal"
+              >
+                Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ
+              </Link>
+            </div>
           </footer>
         </LanguageProvider>
       </body>

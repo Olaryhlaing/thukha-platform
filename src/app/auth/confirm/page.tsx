@@ -6,14 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 
-/* Email-confirmation landing page. Supabase sends one of two link
-   shapes, and both must work or confirmation silently fails:
-   - ?code=… (PKCE): exchange it for a session explicitly.
-   - #access_token=…&type=signup (hash): supabase-js auto-detects
-     it on client creation, so a getSession check finds the session.
-   Errors are shown in Burmese with a next step (resend / login),
-   never a blank page. On success the customer goes to /create —
-   the same place a no-confirmation signup goes. */
 function ConfirmInner() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -32,7 +24,6 @@ function ConfirmInner() {
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const hashError = hash.get("error_description") ?? searchParams.get("error_description");
     if (hashError) {
-      // One-time auth-link decision, not a render loop.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error");
       const lower = hashError.toLowerCase();
@@ -52,7 +43,6 @@ function ConfirmInner() {
           return;
         }
       }
-      // Hash links (and exchanged codes) land here as a session.
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setStatus("done");
@@ -62,48 +52,56 @@ function ConfirmInner() {
         setError(t("confirm.errNoSession"));
       }
     })();
-    // Auth-link processing runs once on load; re-running it on a
-    // language switch would re-exchange the same link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, searchParams]);
 
-  if (!supabaseConfigured()) {
-    return (
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
-        <h1 className="text-3xl font-bold">{t("confirm.title")}</h1>
-        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">{t("common.supabaseNotConnected")}</p>
-        <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToLogin")}</Link>
-      </main>
-    );
-  }
-
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-6 py-10">
-      <h1 className="text-3xl font-bold">{t("confirm.title")}</h1>
-      {status === "working" && (
-        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">{t("confirm.working")}</p>
-      )}
-      {status === "done" && (
-        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">{t("confirm.done")}</p>
-      )}
-      {status === "error" && (
-        <>
-          <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">{error}</p>
-          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
-            <Link href="/signup" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToSignup")}</Link>
-            {" · "}
-            <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.loginLink")}</Link>
-          </p>
-        </>
-      )}
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
+      <div className="flex flex-col items-center gap-5 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-8 text-center shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h1 className="text-2xl font-black sm:text-3xl">
+          <span className="colorful-text-gradient">{t("confirm.title")}</span>
+        </h1>
+
+        {status === "working" && (
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-3 border-thukha-violet border-t-transparent shadow-lg" />
+            <p className="text-sm font-semibold text-thukha-indigo/70 dark:text-white/70">{t("confirm.working")}</p>
+          </div>
+        )}
+
+        {status === "done" && (
+          <div className="anim-scale-in flex flex-col items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-2xl text-white shadow-lg">
+              ✓
+            </div>
+            <p className="text-sm font-semibold text-thukha-indigo/80 dark:text-white/80">{t("confirm.done")}</p>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div className="anim-scale-in space-y-4">
+            <p className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm leading-6 text-rose-900 shadow-sm dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
+              ⚠️ {error}
+            </p>
+            <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+              <Link href="/signup" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                {t("common.goToSignup")}
+              </Link>
+              {" · "}
+              <Link href="/login" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                {t("common.loginLink")}
+              </Link>
+            </p>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
 
-export default function AuthConfirmPage() {
-  const { t } = useLanguage();
+export default function ConfirmPage() {
   return (
-    <Suspense fallback={<main className="mx-auto flex w-full max-w-md flex-1 px-6 py-10"><p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("confirm.working")}</p></main>}>
+    <Suspense>
       <ConfirmInner />
     </Suspense>
   );

@@ -143,10 +143,10 @@ const TEXT_EXAMPLES = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
-const labelClass = "text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]";
+  "w-full rounded-xl border border-thukha-lilac/40 bg-white/90 dark:bg-[#1b1c48]/90 px-3.5 py-2.5 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none transition-all duration-200 focus:border-thukha-violet focus:ring-4 focus:ring-thukha-violet/20 focus:shadow-[0_0_15px_rgba(89,70,237,0.2)]";
+const labelClass = "text-xs font-bold uppercase tracking-wider text-thukha-indigo dark:text-[#f6f7fb]";
 const sectionClass =
-  "flex flex-col gap-4 rounded-2xl border border-thukha-lilac/40 bg-white dark:bg-[#1b1c48] p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5";
+  "gradient-border-top flex flex-col gap-5 rounded-3xl border border-thukha-lilac/30 bg-white/80 dark:bg-thukha-indigo/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-xl sm:p-6";
 
 export default function CreatePage() {
   return (
@@ -741,18 +741,31 @@ function CreatePageInner() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
-      <header className="flex flex-col gap-2 rounded-3xl bg-gradient-to-br from-thukha-violet via-thukha-violet to-thukha-lilac p-5 text-white shadow-xl shadow-thukha-violet/30 sm:p-8">
-        <h1 className="text-2xl font-bold sm:text-3xl">{t("create.title")}</h1>
-        <p className="leading-7 text-white/85">
-          {t("create.subtitle")}
-        </p>
-        {!isGuest && (
-          <p suppressHydrationWarning className="mt-1 w-fit rounded-full bg-white/20 px-4 py-1 text-sm font-bold">
-            {isUnlimited
-              ? t("create.tokenPillUnlimited")
-              : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-thukha-violet via-[#7c3aed] to-[#2563eb] p-6 text-white shadow-xl shadow-thukha-violet/25 sm:p-8">
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-pink-500/30 to-thukha-teal/30 blur-2xl animate-thu-aurora-spin"
+          style={{ animationDuration: "20s" }}
+        />
+        <div className="relative z-10 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="text-xs font-black tracking-widest uppercase text-white/90">Creative AI Studio</span>
+          </div>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{t("create.title")}</h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-white/90 sm:text-base">
+            {t("create.subtitle")}
           </p>
-        )}
+          {!isGuest && (
+            <div className="mt-1 flex items-center gap-2">
+              <span suppressHydrationWarning className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-4 py-1 text-xs font-bold text-white backdrop-blur-md shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                {isUnlimited
+                  ? t("create.tokenPillUnlimited")
+                  : t("create.tokenPill", { tokens: effectiveTokens, start: START_TOKENS, mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
+              </span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Side preview (2026-11-01, user request: preview beside, not
@@ -823,9 +836,9 @@ function CreatePageInner() {
                   setOverlayHeadline(ex.headline);
                   setOverlaySub(ex.sub);
                 }}
-                className="rounded-xl bg-thukha-lilac/20 p-3 text-left ring-1 ring-thukha-lilac/50"
+                className="group rounded-2xl border border-thukha-lilac/30 bg-thukha-lilac/10 p-3.5 text-left transition-all duration-200 hover:border-thukha-violet hover:bg-white hover:shadow-md hover:scale-[1.01] active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
               >
-                <span className="block text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">{ex.label}</span>
+                <span className="block text-sm font-bold text-thukha-indigo transition-colors group-hover:text-thukha-violet dark:text-[#f6f7fb] dark:group-hover:text-thukha-lilac">{ex.label}</span>
                 <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70 dark:text-white/70">
                   {ex.headline} — {ex.sub}
                 </span>
@@ -964,8 +977,13 @@ function CreatePageInner() {
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {PROMPT_EXAMPLES.filter((ex) => ex.type === businessType).map((ex) => (
-                <button key={ex.label} type="button" onClick={() => setAiPrompt(ex.prompt)} className="rounded-xl bg-thukha-lilac/20 p-3 text-left ring-1 ring-thukha-lilac/50">
-                  <span className="block text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">{ex.label}</span>
+                <button
+                  key={ex.label}
+                  type="button"
+                  onClick={() => setAiPrompt(ex.prompt)}
+                  className="group rounded-2xl border border-thukha-lilac/30 bg-thukha-lilac/10 p-3.5 text-left transition-all duration-200 hover:border-thukha-violet hover:bg-white hover:shadow-md hover:scale-[1.01] active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                >
+                  <span className="block text-sm font-bold text-thukha-indigo transition-colors group-hover:text-thukha-violet dark:text-[#f6f7fb] dark:group-hover:text-thukha-lilac">{ex.label}</span>
                   <span className="mt-1 block text-xs leading-5 text-thukha-indigo/70 dark:text-white/70">{ex.prompt}</span>
                 </button>
               ))}
@@ -1037,8 +1055,24 @@ function CreatePageInner() {
             </a>
           </>
         ) : (
-          <button type="button" onClick={generateAi} disabled={aiLoading} className="min-h-[44px] rounded-full bg-gradient-to-r from-thukha-violet to-thukha-lilac px-6 py-3 font-bold text-white shadow-lg shadow-thukha-violet/30 disabled:opacity-50 disabled:animate-pulse">
-            {aiLoading ? t("create.generateLoading") : isUnlimited ? t("create.generateAdmin") : isGuest ? t("create.generateGuest") : t("create.generate", { cost })}
+          <button
+            type="button"
+            onClick={generateAi}
+            disabled={aiLoading}
+            className="colorful-btn-gradient shimmer-hover min-h-[50px] w-full rounded-2xl px-8 py-3.5 text-base font-black text-white shadow-xl shadow-thukha-violet/30 disabled:opacity-50"
+          >
+            {aiLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                {t("create.generateLoading")}
+              </span>
+            ) : isUnlimited ? (
+              `⚡ ${t("create.generateAdmin")}`
+            ) : isGuest ? (
+              `⚡ ${t("create.generateGuest")}`
+            ) : (
+              `⚡ ${t("create.generate", { cost })}`
+            )}
           </button>
         )}
         {aiError && (
@@ -1073,7 +1107,13 @@ function CreatePageInner() {
             <a href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("create.previewGuestLogin")}</a>.
           </p>
         )}
-        <div ref={previewRef} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="relative mx-auto w-full max-w-[480px] select-none">
+        <div
+          ref={previewRef}
+          onContextMenu={(e) => { if (isGuest) e.preventDefault(); }}
+          className={`relative mx-auto w-full max-w-[480px] select-none rounded-2xl transition-all duration-300 ${
+            aiLoading ? "ring-4 ring-thukha-violet/60 shadow-[0_0_35px_rgba(89,70,237,0.45)] animate-pulse" : ""
+          }`}
+        >
           {selected ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={selected} src={selected} alt={t("create.previewAlt")} draggable={false} onContextMenu={(e) => { if (isGuest) e.preventDefault(); }} className="anim-fade-in w-full rounded-2xl shadow-xl shadow-thukha-violet/30" />
@@ -1251,22 +1291,22 @@ function CreatePageInner() {
             )}
             {isGuest ? (
               <>
-                <a href="/login" className="flex min-h-[44px] items-center justify-center rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
+                <a href="/login" className="colorful-btn-gradient shimmer-hover flex min-h-[46px] items-center justify-center rounded-xl px-6 py-3 font-bold text-white shadow-md">
                   {t("create.downloadLoginCta")}
                 </a>
               </>
             ) : (
               <>
-                <button type="button" onClick={downloadWithText} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white">
+                <button type="button" onClick={downloadWithText} className="colorful-btn-gradient shimmer-hover min-h-[46px] rounded-xl px-6 py-3 font-bold text-white shadow-lg">
                   {t("create.downloadWithText")}
                 </button>
-                {overlayMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{overlayMessage}</p>}
-                <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet dark:text-thukha-lilac">
+                {overlayMessage && <p className="anim-scale-in text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{overlayMessage}</p>}
+                <a href={selected} download="thukha-ai.png" className="flex min-h-[44px] items-center justify-center rounded-xl border-2 border-thukha-violet/40 bg-white/40 px-6 py-3 font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-[1.01] active:scale-[0.99] dark:border-thukha-lilac/40 dark:bg-white/5 dark:text-thukha-lilac dark:hover:border-thukha-lilac dark:hover:bg-white/10">
                   {t("create.downloadWithoutText")}
                 </a>
               </>
             )}
-            <button type="button" onClick={saveDesign} className="min-h-[44px] rounded-full border-2 border-thukha-violet px-6 py-3 font-bold text-thukha-violet dark:text-thukha-lilac">
+            <button type="button" onClick={saveDesign} className="flex min-h-[44px] items-center justify-center rounded-xl border border-thukha-violet/30 bg-white/40 px-6 py-3 font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-[1.01] active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:text-thukha-lilac dark:hover:bg-white/10">
               {t("create.saveDesign")}
             </button>
             {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}

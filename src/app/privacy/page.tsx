@@ -2,13 +2,6 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 
-/* Privacy policy, plain language, in the user's chosen language.
-   Every claim here is checked against the code: signup fields,
-   the generations log, the provider strip in lib/privacy.ts,
-   Cloudflare rejecting references, the account-delete API, and
-   the service worker never caching /api/. If a feature changes,
-   this page must change with it — do not let it drift into a
-   promise the code does not keep. */
 export default function PrivacyPage() {
   const { t } = useLanguage();
   const sections: [string, string][] = [
@@ -22,18 +15,39 @@ export default function PrivacyPage() {
     [t("privacy.changeTitle"), t("privacy.changeBody")],
   ];
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
-      <h1 className="text-2xl font-bold">{t("privacy.title")}</h1>
-      <p className="mt-2 text-sm text-thukha-indigo/60 dark:text-white/60">
-        {t("privacy.updated")}
-      </p>
-      <p className="mt-4 leading-7">{t("privacy.intro")}</p>
-      {sections.map(([title, body]) => (
-        <section key={title} className="mt-8">
-          <h2 className="text-lg font-bold">{title}</h2>
-          <p className="mt-2 leading-7">{body}</p>
-        </section>
-      ))}
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-thukha-violet/30 bg-thukha-violet/10 px-3.5 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:bg-white/10 dark:text-thukha-lilac">
+            <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+            Legal & Security
+          </span>
+        </div>
+        <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+          <span className="colorful-text-gradient">{t("privacy.title")}</span>
+        </h1>
+        <p className="text-sm font-medium text-thukha-indigo/60 dark:text-white/60">
+          {t("privacy.updated")}
+        </p>
+      </div>
+
+      <div className="mt-8 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <p className="rounded-2xl border border-thukha-violet/20 bg-thukha-violet/5 p-4 text-base leading-relaxed text-thukha-indigo/90 dark:bg-white/5 dark:text-white/90">
+          {t("privacy.intro")}
+        </p>
+
+        <div className="mt-8 space-y-6">
+          {sections.map(([title, body], idx) => (
+            <section
+              key={title}
+              className={`rounded-2xl border border-thukha-lilac/25 bg-white/50 p-5 transition-all duration-200 hover:border-thukha-violet/30 hover:bg-white/80 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10 stagger-${(idx % 5) + 1}`}
+            >
+              <h2 className="text-lg font-bold text-thukha-indigo dark:text-white">{title}</h2>
+              <p className="mt-2 text-sm leading-7 text-thukha-indigo/80 dark:text-white/80">{body}</p>
+            </section>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }

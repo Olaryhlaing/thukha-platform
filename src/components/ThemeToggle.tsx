@@ -36,7 +36,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={theme === "dark" ? t("theme.toLight") : t("theme.toDark")}
-      className="flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-full border border-thukha-lilac/50 px-3 py-2 text-xs font-bold text-thukha-violet sm:px-4 sm:text-sm dark:text-thukha-lilac"
+      className="flex min-h-[40px] shrink-0 items-center whitespace-nowrap rounded-full border border-thukha-lilac/40 bg-white/50 px-3 py-1.5 text-xs font-bold text-thukha-violet backdrop-blur-sm transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:shadow-[0_0_12px_rgba(89,70,237,0.25)] hover:scale-105 active:scale-95 sm:px-4 sm:text-sm dark:border-white/15 dark:bg-white/5 dark:text-thukha-lilac dark:hover:border-thukha-lilac dark:hover:bg-white/10"
     >
       {theme === "dark" ? t("theme.light") : t("theme.dark")}
     </button>

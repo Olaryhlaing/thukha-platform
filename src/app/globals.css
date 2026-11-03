@@ -1,15 +1,9 @@
 @import "tailwindcss";
 
-/* Dark mode: Tailwind v4 has no built-in .dark variant — this
-   custom variant makes every `dark:` utility in the app respond
-   to a `dark` class on <html>, set by ThemeToggle (saved in
-   localStorage) and by the no-flash script in layout.tsx. */
+/* Dark mode: Tailwind v4 custom variant responding to `dark` class on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ThuKha Platform — fresh build, Brand Guideline 2026–2027
-   Violet #5946ED and Lilac #A78BFA mostly.
-   Indigo #10113D is for dark text/contrast only. */
-
+/* ThuKha Platform — Brand Colors + Vibrant Professional Accents */
 @theme {
   --color-thukha-indigo: #10113d;
   --color-thukha-violet: #5946ed;
@@ -17,6 +11,9 @@
   --color-thukha-blue: #2f80ed;
   --color-thukha-teal: #22c7a9;
   --color-thukha-mist: #f6f7fb;
+  --color-thukha-fuchsia: #d946ef;
+  --color-thukha-amber: #f59e0b;
+  --color-thukha-rose: #f43f5e;
   --font-sans: var(--font-inter), var(--font-myanmar), "Noto Sans Myanmar",
     "Pyidaungsu", system-ui, sans-serif;
 }
@@ -26,8 +23,6 @@
   --foreground: #10113d;
 }
 
-/* Dark surfaces: Midnight Indigo background, Cloud Mist text —
-   the brand's own dark colours, so dark mode still looks ThuKha. */
 .dark {
   --background: #10113d;
   --foreground: #f6f7fb;
@@ -38,48 +33,295 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
-/* Subtle animations (brand-consistent, no library, no layout shift):
-   every page fades up once on load, buttons lift slightly on
-   hover and press in on click, and a newly generated preview image
-   fades in (its key changes, so the animation re-runs per image).
-   Reduced-motion users get none of it, by their system setting. */
+/* ========================================================
+   KEYFRAME ANIMATIONS: Colorful, Fluid & Professional
+   ======================================================== */
+
 @keyframes thu-fade-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
+
 @keyframes thu-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+@keyframes thu-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes thu-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes thu-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes thu-float-delayed {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1.5deg);
+  }
+}
+
+@keyframes thu-aurora-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes thu-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 14px -2px rgba(89, 70, 237, 0.4), 0 0 6px -1px rgba(34, 199, 169, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 28px 4px rgba(89, 70, 237, 0.65), 0 0 16px 2px rgba(167, 139, 250, 0.45);
+  }
+}
+
+@keyframes thu-ping-soft {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  75%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes thu-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(200%);
+  }
+}
+
+/* ========================================================
+   GLOBAL ELEMENT STYLES & INTERACTION TRANSITIONS
+   ======================================================== */
+
 main {
-  animation: thu-fade-up 0.45s ease-out both;
+  animation: thu-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
 .anim-fade-in {
-  animation: thu-fade-in 0.4s ease-out both;
+  animation: thu-fade-in 0.35s ease-out both;
 }
-button {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+
+.anim-scale-in {
+  animation: thu-scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+
+.anim-float {
+  animation: thu-float 4s ease-in-out infinite;
 }
-button:active:not(:disabled) {
+
+.animate-thu-aurora-spin {
+  animation: thu-aurora-spin 30s linear infinite;
+}
+
+.animate-thu-float {
+  animation: thu-float 12s ease-in-out infinite;
+}
+
+.animate-thu-float-delayed {
+  animation: thu-float-delayed 16s ease-in-out infinite;
+}
+
+/* Interactive elements */
+button, a.btn-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease,
+              border-color 0.2s ease,
+              filter 0.2s ease;
+}
+
+button:hover:not(:disabled), a.btn-interactive:hover {
+  transform: translateY(-2px);
+}
+
+button:active:not(:disabled), a.btn-interactive:active {
   transform: scale(0.97);
 }
-a.rounded-full {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+/* Card lift and smooth hover states */
+.interactive-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
 }
-a.rounded-full:hover {
-  transform: translateY(-1px);
+
+.interactive-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(89, 70, 237, 0.18),
+              0 4px 16px -2px rgba(34, 199, 169, 0.14);
 }
+
+/* ========================================================
+   COLORFUL SAAS UTILITY CLASSES
+   ======================================================== */
+
+/* Multi-stop colorful text gradient with fluid animation */
+.colorful-text-gradient {
+  background: linear-gradient(135deg, #5946ed 0%, #9333ea 25%, #ec4899 50%, #22c7a9 75%, #2f80ed 100%);
+  background-size: 250% 250%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: thu-gradient-flow 7s ease infinite;
+}
+
+/* Violet to Teal energetic gradient text */
+.colorful-brand-gradient {
+  background: linear-gradient(120deg, #5946ed 0%, #a78bfa 40%, #22c7a9 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: thu-gradient-flow 6s ease infinite;
+}
+
+/* Colorful glowing button with sheen */
+.colorful-btn-gradient {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #5946ed 0%, #7c3aed 45%, #2f80ed 100%);
+  background-size: 200% 200%;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px -2px rgba(89, 70, 237, 0.45);
+  animation: thu-gradient-flow 8s ease infinite;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.colorful-btn-gradient:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px 0 rgba(89, 70, 237, 0.6), 0 0 16px 0 rgba(34, 199, 169, 0.4);
+}
+
+/* Shimmer shine effect across cards and buttons on hover */
+.shimmer-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-hover::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 0.75s ease;
+}
+
+.shimmer-hover:hover::before {
+  left: 150%;
+}
+
+/* Pulsing radar dot for live status / badges */
+.pulsing-dot {
+  position: relative;
+  display: inline-flex;
+}
+
+.pulsing-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  animation: thu-ping-soft 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Animated gradient border accent for top of cards */
+.gradient-border-top {
+  position: relative;
+}
+
+.gradient-border-top::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #5946ed, #ec4899, #22c7a9, #5946ed);
+  background-size: 300% 100%;
+  animation: thu-gradient-flow 5s linear infinite;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+/* Stagger entrance delays */
+.stagger-1 { animation-delay: 60ms; }
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 180ms; }
+.stagger-4 { animation-delay: 240ms; }
+.stagger-5 { animation-delay: 300ms; }
+
+/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   main,
   .anim-fade-in,
+  .anim-scale-in,
+  .anim-float,
+  .animate-thu-aurora-spin,
+  .animate-thu-float,
+  .animate-thu-float-delayed,
+  .colorful-text-gradient,
+  .colorful-brand-gradient,
+  .colorful-btn-gradient,
+  .gradient-border-top::before,
   button,
-  a.rounded-full {
+  .interactive-card,
+  .pulsing-dot::after {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
   }
 }

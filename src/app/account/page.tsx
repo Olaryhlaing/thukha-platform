@@ -6,19 +6,12 @@ import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 
-/* My account: who I am, my token balance, and — privacy — a way to
-   delete everything myself. Two steps on purpose: the first button
-   only reveals the warning, the second button actually deletes.
-   After a successful delete the session is signed out and the user
-   is sent to /login; there is no "undo", and the page says so. */
 export default function AccountPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
-  // No Supabase env => nothing to load, so start loaded (same
-  // pattern as AuthNav; avoids a synchronous setState in effect).
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -48,7 +41,7 @@ export default function AccountPage() {
           setBalance(json.balance ?? null);
         }
       } catch {
-        // Leave the not-logged-in branch below.
+        // Leave not-logged-in branch below
       }
       setLoaded(true);
     });
@@ -83,67 +76,123 @@ export default function AccountPage() {
 
   if (!loaded) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
-        <p>{t("account.loading")}</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-4 px-4 py-16">
+        <div className="h-10 w-10 animate-spin rounded-full border-3 border-thukha-violet border-t-transparent shadow-lg" />
+        <p className="text-sm font-semibold text-thukha-indigo/70 dark:text-white/70">{t("account.loading")}</p>
       </main>
     );
   }
+
   if (!email) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
-        <h1 className="text-2xl font-bold">{t("account.title")}</h1>
-        <p className="mt-4 leading-7">
-          {t("account.notLoggedIn")}{" "}
-          <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">
-            {t("nav.login")}
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-12">
+        <div className="rounded-3xl border border-thukha-lilac/30 bg-white/70 p-8 text-center shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-thukha-indigo/70">
+          <h1 className="text-3xl font-black">{t("account.title")}</h1>
+          <p className="mt-3 text-base leading-7 text-thukha-indigo/70 dark:text-white/70">
+            {t("account.notLoggedIn")}
+          </p>
+          <Link
+            href="/login"
+            className="colorful-btn-gradient shimmer-hover mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-6 py-2.5 font-bold text-white shadow-md"
+          >
+            {t("nav.login")} →
           </Link>
-        </p>
+        </div>
       </main>
     );
   }
+
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
-      <h1 className="text-2xl font-bold">{t("account.title")}</h1>
-      <div className="mt-6 flex flex-col gap-2 rounded-3xl bg-white dark:bg-[#1b1c48] p-6 ring-1 ring-thukha-lilac/30">
-        <p>
-          <b>{t("account.email")}:</b> {email}
-        </p>
-        <p>
-          <b>{t("account.role")}:</b> {role}
-        </p>
-        <p>
-          <b>{t("account.balance")}:</b>{" "}
-          {role === "admin" ? "∞ Unlimited (Admin)" : balance ?? "—"}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
-          <Link href="/privacy" className="font-bold text-thukha-violet dark:text-thukha-lilac">
-            {t("nav.privacy")}
-          </Link>
-        </p>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-thukha-violet/30 bg-thukha-violet/10 px-3.5 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:bg-white/10 dark:text-thukha-lilac">
+            <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+            Verified Account
+          </span>
+        </div>
+        <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+          <span className="colorful-text-gradient">{t("account.title")}</span>
+        </h1>
       </div>
-      <section className="mt-6 rounded-3xl bg-red-50 dark:bg-red-950 p-6 ring-1 ring-red-200 dark:ring-red-800">
-        <h2 className="text-lg font-bold text-red-900 dark:text-red-100">
-          {t("account.deleteTitle")}
-        </h2>
+
+      {/* User profile card */}
+      <div className="gradient-border-top relative overflow-hidden rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-thukha-violet via-pink-500 to-thukha-teal text-2xl font-black text-white shadow-lg">
+              {email.charAt(0).toUpperCase()}
+              <span className="pulsing-dot absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-white dark:border-thukha-indigo" />
+            </div>
+            <div>
+              <p className="text-lg font-black text-thukha-indigo sm:text-xl dark:text-white">{email}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-thukha-violet/15 px-3 py-0.5 text-xs font-bold text-thukha-violet dark:bg-white/10 dark:text-thukha-lilac">
+                  Role: {role || "Customer"}
+                </span>
+                {role === "admin" && (
+                  <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-300">
+                    Admin Access
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Token balance card */}
+          <div className="flex flex-col rounded-2xl border border-thukha-violet/20 bg-gradient-to-br from-thukha-violet/10 to-thukha-teal/10 p-4 text-center sm:min-w-[180px]">
+            <span className="text-xs font-bold uppercase tracking-wider text-thukha-indigo/60 dark:text-white/60">
+              {t("account.balance")}
+            </span>
+            <span className="mt-1 text-2xl font-black text-thukha-violet dark:text-thukha-lilac">
+              {role === "admin" ? "∞ Unlimited" : balance !== null ? `${balance} Tokens` : "—"}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-thukha-lilac/20 pt-4 text-sm dark:border-white/10">
+          <Link
+            href="/privacy"
+            className="font-semibold text-thukha-violet transition-colors hover:text-thukha-teal hover:underline dark:text-thukha-lilac dark:hover:text-thukha-teal"
+          >
+            {t("nav.privacy")} →
+          </Link>
+          <Link
+            href="/create"
+            className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal hover:underline dark:text-thukha-lilac dark:hover:text-thukha-teal"
+          >
+            Go to Studio →
+          </Link>
+        </div>
+      </div>
+
+      {/* Danger zone card */}
+      <section className="rounded-3xl border border-rose-300/40 bg-rose-500/10 p-6 backdrop-blur-md sm:p-8 dark:border-rose-900/50 dark:bg-rose-950/40">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">⚠️</span>
+          <h2 className="text-lg font-bold text-rose-900 dark:text-rose-200">
+            {t("account.deleteTitle")}
+          </h2>
+        </div>
         {!confirming ? (
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="mt-4 min-h-[44px] rounded-full bg-red-600 px-6 py-2 font-bold text-white"
+            className="mt-4 min-h-[42px] rounded-xl bg-rose-600 px-5 py-2 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-rose-700 hover:shadow-lg active:scale-95"
           >
             {t("account.deleteButton")}
           </button>
         ) : (
-          <>
-            <p className="mt-4 text-sm leading-6 text-red-900 dark:text-red-100">
+          <div className="anim-scale-in mt-4 space-y-4">
+            <p className="text-sm leading-6 text-rose-950 dark:text-rose-200">
               {t("account.deleteWarning")}
             </p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={deleteAccount}
                 disabled={deleting}
-                className="min-h-[44px] rounded-full bg-red-600 px-6 py-2 font-bold text-white disabled:opacity-50"
+                className="min-h-[42px] rounded-xl bg-rose-600 px-5 py-2 text-sm font-bold text-white shadow-md transition-all hover:bg-rose-700 disabled:opacity-50"
               >
                 {deleting ? t("account.deleting") : t("account.deleteConfirm")}
               </button>
@@ -151,14 +200,18 @@ export default function AccountPage() {
                 type="button"
                 onClick={() => setConfirming(false)}
                 disabled={deleting}
-                className="min-h-[44px] rounded-full border-2 border-red-600 px-6 py-2 font-bold text-red-700 dark:text-red-200 disabled:opacity-50"
+                className="min-h-[42px] rounded-xl border border-rose-600 px-5 py-2 text-sm font-bold text-rose-700 transition-all hover:bg-rose-100 dark:text-rose-300 dark:hover:bg-rose-900/40 disabled:opacity-50"
               >
                 {t("account.deleteCancel")}
               </button>
             </div>
-          </>
+          </div>
         )}
-        {message && <p className="mt-4 text-sm leading-6">{message}</p>}
+        {message && (
+          <p className="anim-scale-in mt-4 rounded-xl bg-white/70 p-3 text-sm font-semibold text-rose-900 shadow-sm dark:bg-black/40 dark:text-rose-200">
+            {message}
+          </p>
+        )}
       </section>
     </main>
   );

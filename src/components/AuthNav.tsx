@@ -2,22 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 
-/* Header auth state + role separation. Guest (no Supabase env, or
-   not logged in) sees Login / Signup links; a logged-in customer
-   sees their email and a Logout button; ONLY a logged-in admin sees
-   the Admin link (via /api/me, server-side role check). The old
-   layout showed Admin to everyone, including guests and customers,
-   which mixed the two sides in the UI even though /admin itself
-   already returned 403 for customers. Session lives in the browser
-   via supabase-js. */
 export default function AuthNav() {
+  const router = useRouter();
   const { t } = useLanguage();
   const [email, setEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  // No Supabase env => nothing to load, so start loaded.
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
 
   async function refreshRole(token: string | undefined) {
@@ -54,31 +47,70 @@ export default function AuthNav() {
   }, []);
 
   if (!loaded) return null;
+
   if (!supabaseConfigured()) {
     return (
-      <>
-        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
-        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
-      </>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+        <Link
+          href="/login"
+          className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+        >
+          {t("nav.login")}
+        </Link>
+        <Link
+          href="/create"
+          className="colorful-btn-gradient shimmer-hover flex min-h-[40px] items-center justify-center rounded-full px-5 py-2 text-sm font-bold shadow-md"
+        >
+          {t("nav.start")}
+        </Link>
+      </div>
     );
   }
+
   if (!email) {
     return (
-      <>
-        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
-        <Link href="/signup" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.signup")}</Link>
-        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
-      </>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+        <Link
+          href="/login"
+          className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+        >
+          {t("nav.login")}
+        </Link>
+        <Link
+          href="/signup"
+          className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+        >
+          {t("nav.signup")}
+        </Link>
+        <Link
+          href="/create"
+          className="colorful-btn-gradient shimmer-hover flex min-h-[40px] items-center justify-center rounded-full px-5 py-2 text-sm font-bold shadow-md"
+        >
+          {t("nav.start")}
+        </Link>
+      </div>
     );
   }
+
   return (
-    <>
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
       {isAdmin && (
-        <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.admin")}</Link>
+        <Link
+          href="/admin"
+          className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 font-bold text-amber-500 transition-all duration-200 hover:bg-amber-500/10 hover:scale-105 active:scale-95 dark:text-amber-400"
+        >
+          {t("nav.admin")}
+        </Link>
       )}
-      <Link href="/account" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.account")}</Link>
-      <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70 dark:text-white/70">
-        {email}
+      <Link
+        href="/account"
+        className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+      >
+        {t("nav.account")}
+      </Link>
+      <span className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80">
+        <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+        <span className="max-w-[160px] truncate sm:max-w-[220px]">{email}</span>
       </span>
       <button
         type="button"
@@ -86,15 +118,12 @@ export default function AuthNav() {
           await getSupabase()?.auth.signOut();
           setEmail(null);
           setIsAdmin(false);
-          // Logout goes straight to /login (customer and admin
-          // alike). A full page load, not just a state change, so
-          // no page keeps stale logged-in state after logout —
-          // /create used to keep showing server tokens and /admin
-          // used to keep showing stats until a manual refresh.
-          window.location.assign("/login");
+          router.push("/login");
         }}
-        className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
-      >{t("nav.logout")}</button>
-    </>
+        className="flex min-h-[40px] items-center justify-center rounded-full border border-thukha-violet/40 bg-transparent px-4 py-1 text-xs font-bold text-thukha-violet transition-all duration-200 hover:border-rose-400 hover:bg-rose-500/10 hover:text-rose-500 hover:scale-105 active:scale-95 sm:text-sm dark:border-thukha-lilac/40 dark:text-thukha-lilac dark:hover:border-rose-400 dark:hover:text-rose-400"
+      >
+        {t("nav.logout")}
+      </button>
+    </div>
   );
 }

@@ -8,18 +8,8 @@ import PlatformAbout from "@/components/PlatformAbout";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const inputClass =
-  "w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50";
+  "w-full rounded-xl border border-thukha-lilac/40 bg-white/90 dark:bg-[#1b1c48]/90 px-3.5 py-3 text-base text-thukha-indigo dark:text-[#f6f7fb] outline-none transition-all duration-200 focus:border-thukha-violet focus:ring-4 focus:ring-thukha-violet/20 focus:shadow-[0_0_15px_rgba(89,70,237,0.25)]";
 
-/* Signup, X-Panda-style careful, but adapted for ThuKha (a public
-   SaaS, not a private team): X-Panda needs a full name, a password
-   of at least 8, and a clear pending state instead of a silent
-   auto-login. ThuKha does NOT copy X-Panda's invitation code or
-   admin-approval gate — any customer may sign up directly.
-   Email confirmation is explicit, not left to Supabase's default
-   Site URL: signUp sets emailRedirectTo to /auth/confirm, and
-   that page exchanges the link (code or hash token) for a session
-   and sends the customer to /create. If Confirm email is OFF in
-   Supabase, signUp returns a session at once and goes to /create. */
 export default function SignupPage() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -35,14 +25,16 @@ export default function SignupPage() {
 
   if (!supabaseConfigured()) {
     return (
-      <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+      <main className="mx-auto grid w-full max-w-4xl gap-8 px-4 py-10 md:grid-cols-2">
         <PlatformAbout />
-        <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold">{t("signup.title")}</h1>
-        <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
-          {t("common.supabaseEnvNote")} {t("signup.notConnectedNote")}
-        </p>
-        <Link href="/create" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.goToCreate")}</Link>
+        <div className="flex flex-col justify-center gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/70 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+          <h1 className="text-3xl font-black">{t("signup.title")}</h1>
+          <p className="leading-7 text-thukha-indigo/70 dark:text-white/70">
+            {t("common.supabaseEnvNote")} {t("signup.notConnectedNote")}
+          </p>
+          <Link href="/create" className="colorful-btn-gradient flex min-h-[44px] items-center justify-center rounded-full font-bold text-white shadow-md">
+            {t("common.goToCreate")}
+          </Link>
         </div>
       </main>
     );
@@ -74,9 +66,6 @@ export default function SignupPage() {
       password,
       options: {
         data: { display_name: name.trim() },
-        // Explicit confirmation destination — never rely on the
-        // Supabase default, which may point at localhost / a wrong
-        // domain. /auth/confirm handles code + hash links.
         emailRedirectTo: `${window.location.origin}/auth/confirm`,
       },
     });
@@ -97,9 +86,6 @@ export default function SignupPage() {
       return;
     }
     if (!data.session) {
-      // Supabase Auth "Confirm email" is ON: no session yet, the
-      // customer must click the emailed link first. Show the
-      // pending card (X-Panda style) instead of a one-line note.
       setPending(true);
       return;
     }
@@ -125,58 +111,130 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 md:grid-cols-2">
+    <main className="mx-auto grid w-full max-w-4xl gap-8 px-4 py-8 sm:py-12 md:grid-cols-2">
       <PlatformAbout />
-      <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-bold">{t("signup.title")}</h1>
-      {pending ? (
-        <div className="flex flex-col gap-4 rounded-2xl bg-amber-50 dark:bg-amber-950 p-6 ring-1 ring-amber-300 dark:ring-amber-800">
-          <h2 className="text-lg font-bold text-amber-900 dark:text-amber-100">{t("signup.pendingTitle")}</h2>
-          <p className="text-sm leading-6 text-amber-900 dark:text-amber-100">
-            <b>{email}</b> {t("signup.pendingText")}
-          </p>
-          <ol className="flex flex-col gap-2 text-sm leading-6 text-amber-900 dark:text-amber-100">
-            <li>{t("signup.pendingStep1")}</li>
-            <li>{t("signup.pendingStep2")}</li>
-            <li>{t("signup.pendingStep3")}</li>
-          </ol>
-          {error && <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">{error}</p>}
-          {message && <p className="rounded-xl bg-teal-50 dark:bg-teal-950 p-4 text-sm leading-6 text-teal-900 dark:text-teal-100 ring-1 ring-teal-300 dark:ring-teal-800">{message}</p>}
-          <button type="button" onClick={resend} disabled={resending} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white disabled:opacity-50">
-            {resending ? t("signup.resending") : t("signup.resend")}
-          </button>
-          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
-            {t("signup.afterConfirm")} <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.loginLink")}</Link>
-          </p>
+      <div className="flex flex-col gap-5 rounded-3xl border border-thukha-lilac/30 bg-white/70 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-thukha-violet/10 px-3 py-1 text-xs font-bold text-thukha-violet dark:bg-white/10 dark:text-thukha-lilac">
+            🚀 Join ThuKha
+          </span>
+          <h1 className="mt-2 text-3xl font-black tracking-tight">
+            <span className="colorful-text-gradient">{t("signup.title")}</span>
+          </h1>
         </div>
-      ) : (
-        <>
-          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
-            {t("signup.name")}
-            <input value={name} onChange={(e) => setName(e.target.value)} type="text" className={`${inputClass} mt-1`} />
-          </label>
-          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
-            Email
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={`${inputClass} mt-1`} />
-          </label>
-          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
-            {t("signup.passwordMin")}
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className={`${inputClass} mt-1`} />
-          </label>
-          <label className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
-            {t("signup.passwordAgain")}
-            <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type="password" className={`${inputClass} mt-1`} />
-          </label>
-          {error && <p className="rounded-xl bg-amber-50 dark:bg-amber-950 p-4 text-sm text-amber-900 dark:text-amber-100 ring-1 ring-amber-300 dark:ring-amber-800">{error}</p>}
-          {message && <p className="rounded-xl bg-teal-50 dark:bg-teal-950 p-4 text-sm leading-6 text-teal-900 dark:text-teal-100 ring-1 ring-teal-300 dark:ring-teal-800">{message}</p>}
-          <button type="button" onClick={signup} disabled={loading} className="min-h-[44px] rounded-full bg-thukha-violet px-6 py-3 font-bold text-white disabled:opacity-50">
-            {loading ? t("signup.loading") : t("signup.title")}
-          </button>
-          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
-            {t("signup.hasAccount")} <Link href="/login" className="font-bold text-thukha-violet dark:text-thukha-lilac">{t("common.loginLink")}</Link>
-          </p>
-        </>
-      )}
+
+        {pending ? (
+          <div className="anim-scale-in flex flex-col gap-4 rounded-2xl border border-amber-300/60 bg-amber-500/10 p-6">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <span className="pulsing-dot h-2.5 w-2.5 rounded-full bg-amber-500" />
+              <h2 className="text-lg font-bold">{t("signup.pendingTitle")}</h2>
+            </div>
+            <p className="text-sm leading-6 text-amber-900 dark:text-amber-100">
+              <b>{email}</b> {t("signup.pendingText")}
+            </p>
+            <ol className="flex flex-col gap-2 text-sm leading-6 text-amber-900/90 dark:text-amber-100/90">
+              <li>{t("signup.pendingStep1")}</li>
+              <li>{t("signup.pendingStep2")}</li>
+              <li>{t("signup.pendingStep3")}</li>
+            </ol>
+            {error && (
+              <p className="rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-sm text-rose-900 dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
+                {error}
+              </p>
+            )}
+            {message && (
+              <p className="rounded-xl border border-teal-300 bg-teal-50 p-3.5 text-sm leading-6 text-teal-900 dark:border-teal-800 dark:bg-teal-950/80 dark:text-teal-200">
+                {message}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={resend}
+              disabled={resending}
+              className="colorful-btn-gradient shimmer-hover min-h-[44px] rounded-full px-6 py-3 font-bold text-white shadow-md disabled:opacity-50"
+            >
+              {resending ? t("signup.resending") : t("signup.resend")}
+            </button>
+            <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+              {t("signup.afterConfirm")}{" "}
+              <Link href="/login" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                {t("common.loginLink")}
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <>
+            <label className="text-xs font-bold uppercase tracking-wider text-thukha-indigo dark:text-[#f6f7fb]">
+              {t("signup.name")}
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                type="text"
+                placeholder="Business or Owner Name"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <label className="text-xs font-bold uppercase tracking-wider text-thukha-indigo dark:text-[#f6f7fb]">
+              Email
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                placeholder="name@company.com"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <label className="text-xs font-bold uppercase tracking-wider text-thukha-indigo dark:text-[#f6f7fb]">
+              {t("signup.passwordMin")}
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <label className="text-xs font-bold uppercase tracking-wider text-thukha-indigo dark:text-[#f6f7fb]">
+              {t("signup.passwordAgain")}
+              <input
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                type="password"
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            {error && (
+              <p className="anim-scale-in rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-sm text-rose-900 shadow-sm dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
+                ⚠️ {error}
+              </p>
+            )}
+            {message && (
+              <p className="anim-scale-in rounded-xl border border-teal-300 bg-teal-50 p-3.5 text-sm leading-6 text-teal-900 shadow-sm dark:border-teal-800 dark:bg-teal-950/80 dark:text-teal-200">
+                ✓ {message}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={signup}
+              disabled={loading}
+              className="colorful-btn-gradient shimmer-hover min-h-[46px] rounded-xl px-6 py-3 font-bold text-white shadow-lg disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  {t("signup.loading")}
+                </span>
+              ) : (
+                `${t("signup.title")} →`
+              )}
+            </button>
+            <p className="border-t border-thukha-lilac/20 pt-3 text-center text-sm text-thukha-indigo/70 dark:border-white/10 dark:text-white/70">
+              {t("signup.hasAccount")}{" "}
+              <Link href="/login" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                {t("common.loginLink")}
+              </Link>
+            </p>
+          </>
+        )}
       </div>
     </main>
   );

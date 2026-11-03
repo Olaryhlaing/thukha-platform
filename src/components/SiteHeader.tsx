@@ -9,78 +9,62 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
 
-/* Site header. On auth pages (/login, /signup, /admin/login,
-   /forgot-password, /auth/reset-password) the navigation is
-   hidden entirely — only the logo stays — so the login/signup
-   pages are clean and do not repeat Create / Brands / Designs /
-   Login / Signup / CTA links above the form itself. The theme
-   toggle is NOT part of that nav, so light/dark can be switched
-   on every page, including auth pages. Every other page keeps
-   the full navigation. */
 const AUTH_PAGES = ["/login", "/signup", "/admin/login", "/forgot-password", "/auth/reset-password"];
 
 export default function SiteHeader() {
   const pathname = usePathname();
   const isAuthPage = AUTH_PAGES.includes(pathname ?? "");
   const { t } = useLanguage();
-  // Mobile menu: horizontal scrolling is awkward on a phone
-  // (thumb has to swipe sideways, long email + Logout never fit
-  // in one row), so mobile nav is a hamburger dropdown instead:
-  // tap the button, pick from a vertical list, menu closes.
-  // Desktop never shows the button and never hides the nav.
   const [menuOpen, setMenuOpen] = useState(false);
 
-  /* Header stays pinned at the top while scrolling, on every
-     page and every device (sticky top-0). It needs its own
-     background, otherwise page content would show through it
-     once it sticks: white in Light mode, Midnight Indigo in
-     Dark mode — the same colours as the page body, so it
-     looks unchanged when at the top. */
   return (
-    <header className="sticky top-0 z-50 border-b border-thukha-lilac/30 bg-white dark:bg-thukha-indigo">
-      {/* Mobile: top row only (logo + toggles + hamburger).
-          Tapping the hamburger opens the nav as a vertical
-          dropdown below the header — no sideways scrolling.
-          Desktop (lg): the same three blocks reorder into one
-          row — logo left, nav centred (flex-1), toggles right
-          — so the desktop layout from c28345d is preserved.
-          Auth pages hide the nav and the hamburger, so they
-          stay a single row on every screen. */}
-      <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-2 px-2 py-2 sm:px-3 sm:py-3">
-        {/* Mobile fit: the logo link is shrink-0 + whitespace-nowrap
-            (it used to shrink and wrap "ThuKha / Platform" onto two
-            lines when the language toggle switched to the wider
-            "English" label), the logo is 32px on mobile, and the
-            header padding/gap are tighter on mobile. Desktop
-            sizes are unchanged (sm: classes). */}
-        <Link href="/" className="order-1 flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-bold sm:gap-2 sm:text-base">
-          <Image
-            src="/thukha-logo.png"
-            alt="ThuKha Platform logo"
-            width={40}
-            height={40}
-            className="h-8 w-8 rounded-xl bg-white sm:h-10 sm:w-10 dark:bg-[#1b1c48]"
-          />
-          ThuKha Platform
+    <header className="sticky top-0 z-50 border-b border-thukha-lilac/25 bg-white/85 backdrop-blur-md dark:border-white/10 dark:bg-thukha-indigo/85">
+      {/* Animated colorful gradient line at the bottom of header */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-thukha-violet via-[#ec4899] via-thukha-teal to-thukha-lilac bg-[length:200%_auto] animate-[thu-gradient-flow_7s_linear_infinite]" />
+
+      <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-2 px-3 py-2.5 sm:px-5 sm:py-3">
+        {/* Brand Logo with interactive colorful hover state */}
+        <Link
+          href="/"
+          className="group order-1 flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-black tracking-tight transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] sm:gap-2.5 sm:text-base"
+        >
+          <div className="relative flex items-center justify-center">
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-thukha-violet to-thukha-teal opacity-0 blur transition-opacity duration-300 group-hover:opacity-60" />
+            <Image
+              src="/thukha-logo.png"
+              alt="ThuKha Platform logo"
+              width={40}
+              height={40}
+              className="relative h-8 w-8 rounded-xl bg-white shadow-sm transition-transform duration-300 group-hover:rotate-3 sm:h-9 sm:w-9 dark:bg-[#1b1c48]"
+            />
+          </div>
+          <span className="colorful-brand-gradient">ThuKha Platform</span>
         </Link>
+
         {!isAuthPage && (
           <nav
             onClick={() => setMenuOpen(false)}
-            className={`order-3 w-full flex-col gap-1 px-3 pb-3 text-sm font-semibold sm:gap-2 lg:order-2 lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-4 lg:px-0 lg:pb-0 ${menuOpen ? "flex" : "hidden"}`}
+            className={`order-3 w-full flex-col gap-1.5 px-3 pb-3 text-sm font-semibold transition-all duration-300 sm:gap-2 lg:order-2 lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-3 lg:px-0 lg:pb-0 ${
+              menuOpen ? "flex anim-fade-in bg-white/95 dark:bg-thukha-indigo/95 rounded-2xl p-4 shadow-xl border border-thukha-lilac/30 lg:shadow-none lg:border-none lg:p-0" : "hidden"
+            }`}
           >
-            <Link href="/create" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
+            <Link
+              href="/create"
+              className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:text-thukha-violet hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+            >
               {t("nav.create")}
             </Link>
-            <Link href="/designs" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
+            <Link
+              href="/designs"
+              className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:text-thukha-violet hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+            >
               {t("nav.designs")}
             </Link>
-            {/* No static Admin link here: AuthNav shows it only to
-                logged-in admins (server-side role check), so
-                guests and customers never see admin navigation. */}
             <AuthNav />
           </nav>
         )}
-        <div className="order-2 flex shrink-0 items-center gap-1 sm:gap-2 lg:order-3">
+
+        <div className="order-2 flex shrink-0 items-center gap-1.5 sm:gap-2 lg:order-3">
           <LanguageToggle />
           <ThemeToggle />
           {!isAuthPage && (
@@ -89,7 +73,7 @@ export default function SiteHeader() {
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-thukha-lilac/50 text-xl font-bold text-thukha-violet lg:hidden dark:text-thukha-lilac"
+              className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border border-thukha-lilac/50 bg-white/50 text-xl font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 lg:hidden dark:bg-white/5 dark:text-thukha-lilac dark:hover:bg-white/10"
             >
               {menuOpen ? "✕" : "☰"}
             </button>
