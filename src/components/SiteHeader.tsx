@@ -38,13 +38,14 @@ export default function SiteHeader() {
      looks unchanged when at the top. */
   return (
     <header className="sticky top-0 z-50 border-b border-thukha-lilac/30 bg-white dark:bg-thukha-indigo">
-      {/* Mobile: 2 rows only. Row 1 (order-1 logo + order-2 toggles)
-          is a single row; row 2 (order-3 nav) is one horizontally
-          scrollable row, never wrapped. Desktop (lg): the same
-          three blocks reorder into one row — logo left, nav
-          centred (flex-1), toggles right — so the desktop
-          layout from c28345d is preserved. Auth pages hide the
-          nav, so they stay a single row on every screen. */}
+      {/* Mobile: top row only (logo + toggles + hamburger).
+          Tapping the hamburger opens the nav as a vertical
+          dropdown below the header — no sideways scrolling.
+          Desktop (lg): the same three blocks reorder into one
+          row — logo left, nav centred (flex-1), toggles right
+          — so the desktop layout from c28345d is preserved.
+          Auth pages hide the nav and the hamburger, so they
+          stay a single row on every screen. */}
       <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-2 px-2 py-2 sm:px-3 sm:py-3">
         {/* Mobile fit: the logo link is shrink-0 + whitespace-nowrap
             (it used to shrink and wrap "ThuKha / Platform" onto two
