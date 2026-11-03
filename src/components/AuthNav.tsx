@@ -57,27 +57,27 @@ export default function AuthNav() {
   if (!supabaseConfigured()) {
     return (
       <>
-        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
-        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
+        <Link href="/login" className="shrink-0 min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
+        <Link href="/create" className="shrink-0 flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
       </>
     );
   }
   if (!email) {
     return (
       <>
-        <Link href="/login" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
-        <Link href="/signup" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.signup")}</Link>
-        <Link href="/create" className="flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
+        <Link href="/login" className="shrink-0 min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.login")}</Link>
+        <Link href="/signup" className="shrink-0 min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.signup")}</Link>
+        <Link href="/create" className="shrink-0 flex min-h-[44px] items-center rounded-full bg-thukha-violet px-4 py-2 text-white hover:bg-thukha-lilac">{t("nav.start")}</Link>
       </>
     );
   }
   return (
     <>
       {isAdmin && (
-        <Link href="/admin" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.admin")}</Link>
+        <Link href="/admin" className="shrink-0 min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.admin")}</Link>
       )}
-      <Link href="/account" className="min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.account")}</Link>
-      <span className="min-h-[44px] flex items-center text-sm text-thukha-indigo/70 dark:text-white/70">
+      <Link href="/account" className="shrink-0 min-h-[44px] flex items-center text-thukha-violet dark:text-thukha-lilac">{t("nav.account")}</Link>
+      <span className="shrink-0 min-h-[44px] flex items-center text-sm text-thukha-indigo/70 dark:text-white/70">
         {email}
       </span>
       <button
@@ -93,7 +93,7 @@ export default function AuthNav() {
           // used to keep showing stats until a manual refresh.
           window.location.assign("/login");
         }}
-        className="min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
+        className="shrink-0 min-h-[44px] rounded-full border-2 border-thukha-violet px-4 py-1 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
       >{t("nav.logout")}</button>
     </>
   );

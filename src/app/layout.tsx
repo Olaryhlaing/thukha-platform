@@ -88,8 +88,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PwaRegister />
         <LanguageProvider>
           <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <footer className="border-t border-thukha-lilac/30 py-6 text-center text-sm text-thukha-indigo/60 dark:text-white/60">
+          <div className="flex flex-1 flex-col pb-24">{children}</div>
+          {/* Fixed (not sticky) footer: sticky bottom-0 only shows
+              the footer at the end of a long page, while scrolling
+              the middle it disappears — that is why the previous
+              version looked like it was not working. Fixed keeps
+              it at the bottom of the screen on every page, with
+              the pb-24 above so it never covers content. */}
+          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-thukha-lilac/30 bg-white py-6 text-center text-sm text-thukha-indigo/60 dark:bg-thukha-indigo dark:text-white/60">
             ThuKha Platform ·{" "}
             <Link href="/privacy" className="font-bold text-thukha-violet dark:text-thukha-lilac">
               Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ
