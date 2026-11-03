@@ -22,7 +22,7 @@ function HeroSide() {
   const { t } = useLanguage();
   const steps = [t("about.step1"), t("about.step2"), t("about.step3")];
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden border-b border-thukha-lilac/40 bg-[#ede9fe] p-8 text-thukha-indigo sm:p-12 md:w-1/2 md:border-b-0 md:border-r dark:border-white/10 dark:bg-thukha-indigo dark:text-white">
+    <div className="relative order-2 flex flex-col justify-between overflow-hidden border-t border-thukha-lilac/40 bg-[#ede9fe] p-8 text-thukha-indigo sm:p-12 md:order-1 md:w-1/2 md:border-r md:border-t-0 dark:border-white/10 dark:bg-thukha-indigo dark:text-white">
       <div className="relative z-10">
         <p className="text-xl font-bold">ThuKha Platform</p>
         <div className="mt-12">
@@ -111,12 +111,16 @@ export default function LoginPage() {
   return (
     <main className="flex flex-1 flex-col md:flex-row">
       <HeroSide />
-      {/* Dark mode: form side is also Midnight Indigo (the hero
+      {/* Mobile order: form first (order-1), hero below it
+          (order-2) — on mobile the visitor used to have to scroll
+          past the whole hero (steps, tokens, quote) to reach the
+          login form. Desktop unchanged: hero left (md:order-1),
+          form right (md:order-2).
+          Dark mode: form side is also Midnight Indigo (the hero
           colour), not the lighter #1b1c48 surface — otherwise
-          the dark login page still looks two-toned and the
-          previous body-only change is barely visible. Inputs
+          the dark login page still looks two-toned. Inputs
           keep #1b1c48, so they stand out on the indigo form. */}
-      <div className="flex items-center justify-center bg-white p-8 dark:bg-thukha-indigo sm:p-12 md:w-1/2">
+      <div className="order-1 flex items-center justify-center bg-white p-8 dark:bg-thukha-indigo sm:p-12 md:order-2 md:w-1/2">
         <div className="w-full max-w-md space-y-8">
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
