@@ -71,9 +71,6 @@ export default function SiteHeader() {
             <Link href="/create" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
               {t("nav.create")}
             </Link>
-            <Link href="/brands" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
-              {t("nav.brands")}
-            </Link>
             <Link href="/designs" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
               {t("nav.designs")}
             </Link>
