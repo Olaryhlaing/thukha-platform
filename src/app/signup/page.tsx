@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [rawError, setRawError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
@@ -49,6 +50,17 @@ export default function SignupPage() {
       setError(t("signup.errEmail"));
       return;
     }
+    // Client-side format check FIRST: if this fails, the format
+    // really is wrong. If it passes and Supabase still returns an
+    // "email" error, the cause is NOT the format — it is rate
+    // limiting or confirmation-email sending, and the old code
+    // lied about it by always mapping any "email" error to
+    // errInvalidEmail (that is what the hlaingolary@gmail.com
+    // screenshot showed, even though that address is well-formed).
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t("signup.errInvalidEmail"));
+      return;
+    }
     if (password.length < 8) {
       setError(t("signup.errPasswordMin"));
       return;
@@ -59,6 +71,7 @@ export default function SignupPage() {
     }
     setLoading(true);
     setError("");
+    setRawError("");
     setMessage("");
     const supabase = getSupabase();
     const { data, error: err } = await supabase!.auth.signUp({
@@ -72,13 +85,20 @@ export default function SignupPage() {
     setLoading(false);
     if (err) {
       const msg = (err.message ?? "").toLowerCase();
+      // Show the real Supabase message too, so the next screenshot
+      // tells us the actual cause instead of a guessed translation.
+      setRawError(err.message ?? "");
       if (msg.includes("already") || msg.includes("registered")) {
         setError(t("signup.errExists"));
       } else if (msg.includes("password")) {
         setError(t("signup.errWeak"));
       } else if (msg.includes("sign up") || msg.includes("signup") || msg.includes("not allowed")) {
         setError(t("signup.errDisabled"));
-      } else if (msg.includes("email")) {
+      } else if (msg.includes("rate limit") || msg.includes("too many")) {
+        setError(t("signup.errRateLimit"));
+      } else if (msg.includes("sending") || msg.includes("confirmation") || msg.includes("smtp") || msg.includes("send")) {
+        setError(t("signup.errSend"));
+      } else if (msg.includes("invalid") && msg.includes("email")) {
         setError(t("signup.errInvalidEmail"));
       } else {
         setError(t("signup.errGeneric"));
@@ -205,6 +225,11 @@ export default function SignupPage() {
             {error && (
               <p className="anim-scale-in rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-sm text-rose-900 shadow-sm dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
                 ⚠️ {error}
+              </p>
+            )}
+            {rawError && (
+              <p className="break-words text-xs text-thukha-indigo/60 dark:text-white/60">
+                Supabase: {rawError}
               </p>
             )}
             {message && (
