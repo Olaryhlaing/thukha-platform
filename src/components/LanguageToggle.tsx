@@ -13,7 +13,7 @@ export default function LanguageToggle() {
       type="button"
       onClick={() => setLang(lang === "my" ? "en" : "my")}
       aria-label={lang === "my" ? "Switch to English" : "မြန်မာဘာသာသို့ ပြောင်းပါ"}
-      className="flex min-h-[44px] items-center rounded-full border border-thukha-lilac/50 px-4 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
+      className="flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-full border border-thukha-lilac/50 px-3 py-2 text-xs font-bold text-thukha-violet sm:px-4 sm:text-sm dark:text-thukha-lilac"
     >
       {lang === "my" ? "English" : "မြန်မာ"}
     </button>

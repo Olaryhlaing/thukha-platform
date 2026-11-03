@@ -35,17 +35,23 @@ export default function SiteHeader() {
       <div
         className={
           isAuthPage
-            ? "flex w-full flex-row items-center justify-between gap-2 px-3 py-3"
+            ? "flex w-full flex-row items-center justify-between gap-1 px-2 py-3 sm:gap-2 sm:px-3"
             : "flex w-full flex-col items-center justify-between gap-2 px-3 py-3 lg:flex-row"
         }
       >
-        <Link href="/" className="flex items-center gap-2 text-base font-bold">
+        {/* Mobile fit: the logo link is shrink-0 + whitespace-nowrap
+            (it used to shrink and wrap "ThuKha / Platform" onto two
+            lines when the language toggle switched to the wider
+            "English" label), the logo is 32px on mobile, and the
+            header padding/gap are tighter on mobile. Desktop
+            sizes are unchanged (sm: classes). */}
+        <Link href="/" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-bold sm:gap-2 sm:text-base">
           <Image
             src="/thukha-logo.png"
             alt="ThuKha Platform logo"
             width={40}
             height={40}
-            className="rounded-xl bg-white dark:bg-[#1b1c48]"
+            className="h-8 w-8 rounded-xl bg-white sm:h-10 sm:w-10 dark:bg-[#1b1c48]"
           />
           ThuKha Platform
         </Link>
@@ -66,7 +72,7 @@ export default function SiteHeader() {
             <AuthNav />
           </nav>
         )}
-        <div className="flex items-center gap-2 self-end lg:self-center">
+        <div className="flex shrink-0 items-center gap-1 self-end sm:gap-2 lg:self-center">
           <LanguageToggle />
           <ThemeToggle />
         </div>
