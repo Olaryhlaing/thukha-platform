@@ -14,6 +14,13 @@ export default function AccountPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
   const [confirming, setConfirming] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [editMsg, setEditMsg] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordAgain, setNewPasswordAgain] = useState("");
+  const [pwMsg, setPwMsg] = useState("");
+  const [savingPw, setSavingPw] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -32,11 +39,13 @@ export default function AccountPage() {
         });
         const json = (await res.json()) as {
           email?: string;
+          display_name?: string | null;
           role?: string;
           balance?: number | null;
         };
         if (res.ok) {
           setEmail(json.email ?? null);
+          setDisplayName(json.display_name ?? "");
           setRole(json.role ?? "");
           setBalance(json.balance ?? null);
         }
@@ -46,6 +55,59 @@ export default function AccountPage() {
       setLoaded(true);
     });
   }, []);
+
+  async function saveName() {
+    if (!displayName.trim()) {
+      setEditMsg(t("account.editNameEmpty"));
+      return;
+    }
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    setSavingName(true);
+    setEditMsg("");
+    try {
+      const res = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ display_name: displayName.trim() }),
+      });
+      if (!res.ok) {
+        setEditMsg(t("account.editFailed"));
+      } else {
+        // Keep Supabase Auth metadata in sync too (signup name).
+        await supabase?.auth.updateUser({ data: { display_name: displayName.trim() } });
+        setEditMsg(t("account.editSaved"));
+      }
+    } catch {
+      setEditMsg(t("account.editFailed"));
+    }
+    setSavingName(false);
+  }
+
+  async function savePassword() {
+    if (newPassword.length < 8) {
+      setPwMsg(t("account.passwordMin"));
+      return;
+    }
+    if (newPassword !== newPasswordAgain) {
+      setPwMsg(t("account.passwordMatch"));
+      return;
+    }
+    const supabase = getSupabase();
+    if (!supabase) return;
+    setSavingPw(true);
+    setPwMsg("");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPw(false);
+    if (error) {
+      setPwMsg(t("account.passwordFailed"));
+    } else {
+      setPwMsg(t("account.passwordSaved"));
+      setNewPassword("");
+      setNewPasswordAgain("");
+    }
+  }
 
   async function deleteAccount() {
     const supabase = getSupabase();
@@ -125,7 +187,10 @@ export default function AccountPage() {
               <span className="pulsing-dot absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-white dark:border-thukha-indigo" />
             </div>
             <div>
-              <p className="text-lg font-black text-thukha-indigo sm:text-xl dark:text-white">{email}</p>
+              <p className="text-lg font-black text-thukha-indigo sm:text-xl dark:text-white">{displayName || email}</p>
+              {displayName && (
+                <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{email}</p>
+              )}
               <div className="mt-1 flex items-center gap-2">
                 <span className="inline-flex items-center rounded-full bg-thukha-violet/15 px-3 py-0.5 text-xs font-bold text-thukha-violet dark:bg-white/10 dark:text-thukha-lilac">
                   Role: {role || "Customer"}
@@ -165,6 +230,63 @@ export default function AccountPage() {
           </Link>
         </div>
       </div>
+
+      {/* Edit personal information — customer edits their own
+          name and password only. Email / Role / Token balance
+          are read-only here (see the note below). */}
+      <section className="rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-lg font-bold">{t("account.editTitle")}</h2>
+        <label className="mt-4 block text-sm font-bold">
+          {t("account.editName")}
+          <input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            type="text"
+            className="mt-1 w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50"
+          />
+        </label>
+        {editMsg && <p className="mt-2 text-sm font-semibold">{editMsg}</p>}
+        <button
+          type="button"
+          onClick={saveName}
+          disabled={savingName}
+          className="mt-3 min-h-[44px] rounded-full bg-thukha-violet px-6 py-2.5 font-bold text-white disabled:opacity-50"
+        >
+          {savingName ? t("account.loading") : t("account.editSave")}
+        </button>
+
+        <h3 className="mt-8 text-base font-bold">{t("account.passwordTitle")}</h3>
+        <label className="mt-3 block text-sm font-bold">
+          {t("account.passwordNew")}
+          <input
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            type="password"
+            className="mt-1 w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50"
+          />
+        </label>
+        <label className="mt-3 block text-sm font-bold">
+          {t("account.passwordAgain")}
+          <input
+            value={newPasswordAgain}
+            onChange={(e) => setNewPasswordAgain(e.target.value)}
+            type="password"
+            className="mt-1 w-full rounded-xl border border-thukha-lilac/50 bg-white dark:bg-[#1b1c48] px-3 py-3 text-base outline-none focus:border-thukha-violet focus:ring-2 focus:ring-thukha-lilac/50"
+          />
+        </label>
+        {pwMsg && <p className="mt-2 text-sm font-semibold">{pwMsg}</p>}
+        <button
+          type="button"
+          onClick={savePassword}
+          disabled={savingPw}
+          className="mt-3 min-h-[44px] rounded-full bg-thukha-violet px-6 py-2.5 font-bold text-white disabled:opacity-50"
+        >
+          {savingPw ? t("account.loading") : t("account.passwordSave")}
+        </button>
+        <p className="mt-4 text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("account.readOnlyNote")}
+        </p>
+      </section>
 
       {/* Danger zone card */}
       <section className="rounded-3xl border border-rose-300/40 bg-rose-500/10 p-6 backdrop-blur-md sm:p-8 dark:border-rose-900/50 dark:bg-rose-950/40">
