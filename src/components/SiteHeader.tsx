@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import AuthNav from "@/components/AuthNav";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -22,6 +23,12 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const isAuthPage = AUTH_PAGES.includes(pathname ?? "");
   const { t } = useLanguage();
+  // Mobile menu: horizontal scrolling is awkward on a phone
+  // (thumb has to swipe sideways, long email + Logout never fit
+  // in one row), so mobile nav is a hamburger dropdown instead:
+  // tap the button, pick from a vertical list, menu closes.
+  // Desktop never shows the button and never hides the nav.
+  const [menuOpen, setMenuOpen] = useState(false);
 
   /* Header stays pinned at the top while scrolling, on every
      page and every device (sticky top-0). It needs its own
@@ -56,7 +63,10 @@ export default function SiteHeader() {
           ThuKha Platform
         </Link>
         {!isAuthPage && (
-          <nav className="order-3 flex w-full items-center gap-3 overflow-x-auto whitespace-nowrap px-1 pb-1 text-sm font-semibold sm:gap-4 lg:order-2 lg:w-auto lg:flex-1 lg:justify-center lg:overflow-visible lg:px-0 lg:pb-0">
+          <nav
+            onClick={() => setMenuOpen(false)}
+            className={`order-3 w-full flex-col gap-1 px-3 pb-3 text-sm font-semibold sm:gap-2 lg:order-2 lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-4 lg:px-0 lg:pb-0 ${menuOpen ? "flex" : "hidden"}`}
+          >
             <Link href="/create" className="min-h-[44px] flex shrink-0 items-center text-thukha-violet dark:text-thukha-lilac">
               {t("nav.create")}
             </Link>
@@ -75,6 +85,17 @@ export default function SiteHeader() {
         <div className="order-2 flex shrink-0 items-center gap-1 sm:gap-2 lg:order-3">
           <LanguageToggle />
           <ThemeToggle />
+          {!isAuthPage && (
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-thukha-lilac/50 text-xl font-bold text-thukha-violet lg:hidden dark:text-thukha-lilac"
+            >
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          )}
         </div>
       </div>
     </header>
