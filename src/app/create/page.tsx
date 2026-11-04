@@ -398,7 +398,20 @@ function CreatePageInner() {
       const res = await fetch("/api/tokens", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
+      let json: { mode?: string; balance?: number; total?: number; unlimited?: boolean; reason?: string; error?: string };
+      try {
+        json = (await res.json()) as typeof json;
+      } catch {
+        // Server answered non-JSON (e.g. a 500 HTML page) — that
+        // is a server crash, not a token problem. Show the status
+        // so Vercel Logs can be checked for /api/tokens.
+        setTokenMsg(`${t("create.tokenRefreshFailed")} (HTTP ${res.status}, response not JSON)`);
+        return;
+      }
+      if (!res.ok) {
+        setTokenMsg(`${t("create.tokenRefreshFailed")} (HTTP ${res.status}${json.error ? `: ${json.error}` : ""})`);
+        return;
+      }
       if (json.mode === "server" && json.unlimited) {
         setIsUnlimited(true);
         setTokenMsg("");
@@ -409,8 +422,8 @@ function CreatePageInner() {
       } else {
         // Logged in, but the server did not return a server
         // balance — do NOT silently show guest tokens as if they
-        // were the server balance.
-        setTokenMsg(t("create.tokenGuestMode"));
+        // were the server balance. Show the server's reason.
+        setTokenMsg(`${t("create.tokenGuestMode")} (${json.reason ?? "unknown"})`);
       }
     } catch {
       setTokenMsg(t("create.tokenRefreshFailed"));

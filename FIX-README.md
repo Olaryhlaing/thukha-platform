@@ -1,31 +1,30 @@
-# Token pill v2 — 2026-11-04 (cumulative: includes v1 focus/pageshow refresh)
-Symptom, twice: /account shows 300, then 400 Tokens, /create still
-shows 0 / 100 for the same customer (Hlaing, hlaingolary@gmail.com).
-Correction to the earlier diagnosis: the pill text "Server (login)"
-is HARDCODED in the render — it does NOT prove the server fetch
-succeeded. A 0/100 pill can be browser guest tokens (which can be
-0) after a failed/stale server fetch, with the server word still
-showing. That is why hard reload alone is not a reliable test.
-What is in this pack (2 files only):
-- src/app/create/page.tsx: a "Token ပြန်စစ်" (Refresh) button next
-  to the pill. Clicking it refetches /api/tokens on demand and
-  updates the pill. If the server answers guest mode while logged
-  in, or the fetch fails, a warning appears instead of a silent 0.
-  Plus v1: refetch on tab focus, pageshow (Back button), and when
-  the tab becomes visible again.
-- src/lib/i18n.ts: my+en keys for the button and warnings.
-No Supabase step.
-Apply AFTER Batch 1 and after v1 (this create page already
-contains both, so it can overwrite either): overwrite the 2 files
-in D:\thukha-platform-fresh, commit, push, Vercel Ready.
+# Token debug v3 — 2026-11-04 (cumulative, includes v1+v2)
+Evidence: new customer Olary (amhappleph@gmail.com) shows
+100 Tokens in /account, but /create shows 0 / 100 even after
+clicking "Token ပြန်စစ်", with "Token ဖတ်လို့ မရပါ" below it.
+Expected behaviour (confirmed by the user, already the design):
+new customer = 100 / 100, then deduct as used (e.g. 100 -> 90
+after a 10-token image, 100 -> 85 after 15, etc.), never 0/100
+while the account has 100.
+What changed (2 files, no Supabase step):
+- src/app/api/tokens/route.ts: guest answers now carry a reason
+  ("no_user" = browser token did not verify, "no_service" =
+  server env missing). No secret, no token value.
+- src/app/create/page.tsx: Refresh no longer shows only the
+  generic failed message. It now shows HTTP status and the
+  server reason, e.g. "(no_user)", "(HTTP 500, response not
+  JSON)", so one click tells whether the token expired, the
+  server crashed, or the fetch never reached the server.
+Apply: overwrite the 2 files in D:\thukha-platform-fresh
+(this create page already contains Batch 1 + v1 + v2, so it can
+overwrite any of those), commit, push, Vercel Ready.
 Test:
-1. /create -> click "Token ပြန်စစ်" -> pill must become
-   400 / total (total >= 400), not 0 / 100.
-2. If the warning "Server က Token ဖတ်လို့ မရဘူး" appears, log
-   out and back in, then click Refresh again — if it STILL
-   shows the warning, the server fetch itself is failing and
-   that is the next bug to fix (not the pill).
-3. Immediate workaround without this pack: log out, log back in,
-   open /create in a NEW tab — a fresh session forces a fresh
-   server fetch. If that also shows 0/100, do step 2's warning
-   check after this pack is live.
+1. /create -> click "Token ပြန်စစ်" -> tell me the EXACT message
+   under the pill (including the bracket part).
+   - If it becomes 100 / 100: fetch is fixed, generate an image
+     and check it drops to 90 / 100 (10-token post).
+   - If it shows "(no_user)": log out, log back in, click
+     Refresh again — the old session token had expired.
+   - If it shows "(HTTP 500...)" or "(no_service)": check
+     Vercel -> Deployments -> latest -> Functions -> /api/tokens
+     log and send that error (no keys in it).
