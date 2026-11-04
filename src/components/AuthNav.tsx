@@ -125,22 +125,6 @@ export default function AuthNav() {
           {t("nav.admin")}
         </Link>
       )}
-      <Link
-        href="/account"
-        className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
-      >
-        {t("nav.account")}
-      </Link>
-      <span className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-        ) : (
-          <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
-        )}
-        <span className="max-w-[160px] truncate sm:max-w-[220px]">
-          {displayName ?? email.split("@")[0] ?? email}
-        </span>
-      </span>
       <button
         type="button"
         onClick={async () => {
@@ -155,6 +139,24 @@ export default function AuthNav() {
       >
         {t("nav.logout")}
       </button>
+      {/* Profile pill — 2026-11-04 owner request: this pill (avatar +
+          name) is the Account link now, so the separate "Account"
+          text link is removed. It is rendered LAST in AuthNav, and
+          SiteHeader puts AuthNav after the toggles on desktop, so
+          this pill sits at the far right end of the screen. */}
+      <Link
+        href="/account"
+        className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+        ) : (
+          <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+        )}
+        <span className="max-w-[160px] truncate sm:max-w-[220px]">
+          {displayName ?? email.split("@")[0] ?? email}
+        </span>
+      </Link>
     </div>
   );
 }

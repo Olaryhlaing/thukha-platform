@@ -60,13 +60,25 @@ export default function SiteHeader() {
             >
               {t("nav.designs")}
             </Link>
-            <AuthNav />
+            <div className="lg:hidden">
+              <AuthNav />
+            </div>
           </nav>
         )}
 
         <div className="order-2 flex shrink-0 items-center gap-1.5 sm:gap-2 lg:order-3">
           <LanguageToggle />
           <ThemeToggle />
+          {/* Desktop only: logged-in pill (and guest links) sit here,
+              after the toggles, so the avatar+name pill is the far
+              right item on screen. Mobile keeps AuthNav inside the
+              hamburger menu above, or the top row would crowd again.
+              Auth pages show no AuthNav here, same as the nav. */}
+          {!isAuthPage && (
+            <div className="hidden lg:flex lg:items-center lg:gap-3">
+              <AuthNav />
+            </div>
+          )}
           {!isAuthPage && (
             <button
               type="button"
