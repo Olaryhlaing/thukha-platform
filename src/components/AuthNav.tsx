@@ -154,24 +154,12 @@ export default function AuthNav() {
 
   return (
     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
-      <button
-        type="button"
-        onClick={async () => {
-          await getSupabase()?.auth.signOut();
-          setEmail(null);
-          setDisplayName(null);
-          setAvatarUrl(null);
-          router.push("/login");
-        }}
-        className="flex min-h-[40px] items-center justify-center rounded-full border border-thukha-violet/40 bg-transparent px-4 py-1 text-xs font-bold text-thukha-violet transition-all duration-200 hover:border-rose-400 hover:bg-rose-500/10 hover:text-rose-500 hover:scale-105 active:scale-95 sm:text-sm dark:border-thukha-lilac/40 dark:text-thukha-lilac dark:hover:border-rose-400 dark:hover:text-rose-400"
-      >
-        {t("nav.logout")}
-      </button>
       {/* Profile pill — 2026-11-04 owner request: this pill (avatar +
           name) is the Account link now, so the separate "Account"
-          text link is removed. It is rendered LAST in AuthNav, and
-          SiteHeader puts AuthNav after the toggles on desktop, so
-          this pill sits at the far right end of the screen. */}
+          text link is removed. Logout is rendered AFTER it (owner
+          request, same day: Logout at the far end), so on desktop
+          the order is ... Pill, Logout — Logout is the far right
+          item. SiteHeader puts AuthNav after the toggles. */}
       <Link
         href="/account"
         className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm transition-all duration-200 hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10"
@@ -185,6 +173,19 @@ export default function AuthNav() {
           {displayName ?? email.split("@")[0] ?? email}
         </span>
       </Link>
+      <button
+        type="button"
+        onClick={async () => {
+          await getSupabase()?.auth.signOut();
+          setEmail(null);
+          setDisplayName(null);
+          setAvatarUrl(null);
+          router.push("/login");
+        }}
+        className="flex min-h-[40px] items-center justify-center rounded-full border border-thukha-violet/40 bg-transparent px-4 py-1 text-xs font-bold text-thukha-violet transition-all duration-200 hover:border-rose-400 hover:bg-rose-500/10 hover:text-rose-500 hover:scale-105 active:scale-95 sm:text-sm dark:border-thukha-lilac/40 dark:text-thukha-lilac dark:hover:border-rose-400 dark:hover:text-rose-400"
+      >
+        {t("nav.logout")}
+      </button>
     </div>
   );
 }
