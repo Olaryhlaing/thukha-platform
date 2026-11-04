@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   }
   const { data: profile } = await service
     .from("profiles")
-    .select("role, display_name")
+    .select("role, display_name, avatar_url")
     .eq("id", user.id)
     .single();
   const { data: balanceRow } = await service
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     email: user.email,
     display_name: profile?.display_name ?? null,
+    avatar_url: profile?.avatar_url ?? null,
     role: profile?.role ?? "customer",
     balance: balanceRow?.balance ?? null,
   });
@@ -63,9 +64,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "အမည် အရှည် ၁၀၀ လုံးထက် မကျော်ရပါ။" }, { status: 400 });
   }
   // ONLY display_name is updatable here — never role, never
-  // token balance, never email. Any other field in the body is
-  // ignored, so a customer cannot promote themselves to admin
-  // or change their balance through this endpoint.
+  // token balance, never email, and never avatar_url (a picture
+  // may only be set by the validated upload in /api/me/avatar,
+  // never by posting an arbitrary URL here). Any other field in
+  // the body is ignored, so a customer cannot promote themselves
+  // to admin or change their balance through this endpoint.
   const { data: existing } = await service
     .from("profiles")
     .select("id, role")

@@ -16,6 +16,9 @@ export default function AuthNav() {
   // name in Supabase Auth metadata, then the email prefix —
   // never blank, and never the full email if a name exists.
   const [displayName, setDisplayName] = useState<string | null>(null);
+  // Profile picture from /api/me (same call as the role) — the
+  // header shows the picture next to the name when one exists.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
 
@@ -23,15 +26,17 @@ export default function AuthNav() {
     if (!token) {
       setIsAdmin(false);
       setDisplayName(null);
+      setAvatarUrl(null);
       return;
     }
     try {
       const res = await fetch("/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json()) as { role?: string; display_name?: string | null };
+      const json = (await res.json()) as { role?: string; display_name?: string | null; avatar_url?: string | null };
       setIsAdmin(res.ok && json.role === "admin");
       if (res.ok && json.display_name) setDisplayName(json.display_name);
+      if (res.ok) setAvatarUrl(json.avatar_url ?? null);
     } catch {
       setIsAdmin(false);
     }
@@ -44,6 +49,8 @@ export default function AuthNav() {
       setEmail(data.session?.user.email ?? null);
       const metaName = data.session?.user.user_metadata?.display_name as string | undefined;
       if (metaName) setDisplayName(metaName);
+      const metaAvatar = data.session?.user.user_metadata?.avatar_url as string | undefined;
+      if (metaAvatar) setAvatarUrl(metaAvatar);
       setLoaded(true);
       void refreshRole(data.session?.access_token);
     });
@@ -53,6 +60,9 @@ export default function AuthNav() {
         const metaName = session?.user.user_metadata?.display_name as string | undefined;
         if (metaName) setDisplayName(metaName);
         else if (!session) setDisplayName(null);
+        const metaAvatar = session?.user.user_metadata?.avatar_url as string | undefined;
+        if (metaAvatar) setAvatarUrl(metaAvatar);
+        else if (!session) setAvatarUrl(null);
         void refreshRole(session?.access_token);
       },
     );
@@ -122,7 +132,11 @@ export default function AuthNav() {
         {t("nav.account")}
       </Link>
       <span className="flex min-h-[40px] items-center gap-1.5 rounded-full border border-thukha-lilac/30 bg-white/40 px-3 py-1 text-xs font-medium text-thukha-indigo/80 backdrop-blur-sm sm:text-sm dark:border-white/10 dark:bg-white/5 dark:text-white/80">
-        <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+        ) : (
+          <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
+        )}
         <span className="max-w-[160px] truncate sm:max-w-[220px]">
           {displayName ?? email.split("@")[0] ?? email}
         </span>
@@ -133,6 +147,7 @@ export default function AuthNav() {
           await getSupabase()?.auth.signOut();
           setEmail(null);
           setDisplayName(null);
+          setAvatarUrl(null);
           setIsAdmin(false);
           router.push("/login");
         }}

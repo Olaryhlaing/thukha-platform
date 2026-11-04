@@ -15,6 +15,12 @@ export default function AccountPage() {
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
   const [confirming, setConfirming] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarMsg, setAvatarMsg] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   const [editMsg, setEditMsg] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -40,12 +46,14 @@ export default function AccountPage() {
         const json = (await res.json()) as {
           email?: string;
           display_name?: string | null;
+          avatar_url?: string | null;
           role?: string;
           balance?: number | null;
         };
         if (res.ok) {
           setEmail(json.email ?? null);
           setDisplayName(json.display_name ?? "");
+          setAvatarUrl(json.avatar_url ?? null);
           setRole(json.role ?? "");
           setBalance(json.balance ?? null);
         }
@@ -107,6 +115,85 @@ export default function AccountPage() {
       setNewPassword("");
       setNewPasswordAgain("");
     }
+  }
+
+  function chooseAvatar(file: File | undefined) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setAvatarMsg(t("account.avatarInvalidType"));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarMsg(t("account.avatarTooLarge"));
+      return;
+    }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarMsg("");
+  }
+
+  async function uploadAvatar() {
+    if (!avatarFile) {
+      setAvatarMsg(t("account.avatarNoFile"));
+      return;
+    }
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    setUploadingAvatar(true);
+    setAvatarMsg("");
+    try {
+      const form = new FormData();
+      form.append("avatar", avatarFile);
+      const res = await fetch("/api/me/avatar", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const json = (await res.json().catch(() => ({}))) as { avatar_url?: string; error?: string };
+      if (!res.ok || !json.avatar_url) {
+        setAvatarMsg(json.error ?? t("account.avatarFailed"));
+      } else {
+        setAvatarUrl(json.avatar_url);
+        // Keep the header in sync without a reload: the same
+        // client-metadata trick the name save already uses —
+        // updateUser fires onAuthStateChange, and AuthNav then
+        // re-reads /api/me and shows the new picture.
+        await supabase?.auth.updateUser({ data: { avatar_url: json.avatar_url } });
+        setAvatarFile(null);
+        if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview(null);
+        setAvatarMsg(t("account.avatarSaved"));
+      }
+    } catch {
+      setAvatarMsg(t("account.avatarFailed"));
+    }
+    setUploadingAvatar(false);
+  }
+
+  async function removeAvatar() {
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    setRemovingAvatar(true);
+    setAvatarMsg("");
+    try {
+      const res = await fetch("/api/me/avatar", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setAvatarMsg(t("account.avatarFailed"));
+      } else {
+        setAvatarUrl(null);
+        await supabase?.auth.updateUser({ data: { avatar_url: null } });
+        setAvatarMsg(t("account.avatarRemoved"));
+      }
+    } catch {
+      setAvatarMsg(t("account.avatarFailed"));
+    }
+    setRemovingAvatar(false);
   }
 
   async function deleteAccount() {
@@ -182,8 +269,18 @@ export default function AccountPage() {
       <div className="gradient-border-top relative overflow-hidden rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-thukha-violet via-pink-500 to-thukha-teal text-2xl font-black text-white shadow-lg">
-              {email.charAt(0).toUpperCase()}
+            <div className="relative h-16 w-16 shrink-0">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-16 w-16 rounded-2xl object-cover shadow-lg"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-thukha-violet via-pink-500 to-thukha-teal text-2xl font-black text-white shadow-lg">
+                  {email.charAt(0).toUpperCase()}
+                </div>
+              )}
               <span className="pulsing-dot absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-white dark:border-thukha-indigo" />
             </div>
             <div>
@@ -254,6 +351,56 @@ export default function AccountPage() {
         >
           {savingName ? t("account.loading") : t("account.editSave")}
         </button>
+
+        <h3 className="mt-8 text-base font-bold">{t("account.avatarTitle")}</h3>
+        <div className="mt-3 flex items-center gap-4">
+          {avatarPreview || avatarUrl ? (
+            <img
+              src={avatarPreview ?? avatarUrl ?? ""}
+              alt=""
+              className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-md"
+            />
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-thukha-violet/15 text-2xl font-black text-thukha-violet dark:text-thukha-lilac">
+              {email.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-full border border-thukha-violet/40 px-5 py-2 text-sm font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:text-thukha-lilac">
+              {t("account.avatarChoose")}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => chooseAvatar(e.target.files?.[0])}
+              />
+            </label>
+            {avatarUrl && !avatarPreview && (
+              <button
+                type="button"
+                onClick={removeAvatar}
+                disabled={removingAvatar}
+                className="min-h-[44px] rounded-full border border-rose-400 px-5 py-2 text-sm font-bold text-rose-600 disabled:opacity-50 dark:text-rose-300"
+              >
+                {removingAvatar ? t("account.avatarRemoving") : t("account.avatarRemove")}
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("account.avatarNote")}
+        </p>
+        {avatarMsg && <p className="mt-2 text-sm font-semibold">{avatarMsg}</p>}
+        {avatarPreview && (
+          <button
+            type="button"
+            onClick={uploadAvatar}
+            disabled={uploadingAvatar}
+            className="mt-3 min-h-[44px] rounded-full bg-thukha-violet px-6 py-2.5 font-bold text-white disabled:opacity-50"
+          >
+            {uploadingAvatar ? t("account.avatarUploading") : t("account.avatarUpload")}
+          </button>
+        )}
 
         <h3 className="mt-8 text-base font-bold">{t("account.passwordTitle")}</h3>
         <label className="mt-3 block text-sm font-bold">

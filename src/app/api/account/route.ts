@@ -22,6 +22,17 @@ export async function DELETE(request: Request) {
     );
   }
   const id = user.id;
+  // Erase the profile picture too, or a public avatar file would
+  // survive after the account is gone. Best-effort: a missing
+  // bucket must not block the account delete.
+  try {
+    const { data: avatarFiles } = await service.storage.from("avatars").list(id);
+    if (avatarFiles && avatarFiles.length > 0) {
+      await service.storage.from("avatars").remove(avatarFiles.map((f) => `${id}/${f.name}`));
+    }
+  } catch {
+    // Account delete continues below regardless.
+  }
   await service.from("usage_events").delete().eq("owner_id", id);
   await service.from("generations").delete().eq("owner_id", id);
   await service.from("designs").delete().eq("owner_id", id);
