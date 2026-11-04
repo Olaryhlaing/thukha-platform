@@ -214,8 +214,8 @@ function CreatePageInner() {
   // This is the pill denominator — it must NOT be the hardcoded
   // START_TOKENS (100), or a refilled customer shows 200/100.
   // It does not change when an image is generated (only the
-  // balance drops), and it only changes on a refill, which
-  // needs a page reload to show (same as the balance reload).
+  // balance drops). On a refill it now updates via the focus /
+  // pageshow refresh above — no hard reload needed.
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   // Admin accounts are unlimited (role=admin, server-side): no
   // balance check, no deduction — the pill shows ∞ instead of a number.
@@ -372,24 +372,52 @@ function CreatePageInner() {
   }, []);
 
   // Load the server balance once a session exists; guests stay local.
+  // BUGFIX 2026-11-04 (account 300 / create 0): this effect used to
+  // run ONLY on first mount, so a /create tab opened BEFORE an
+  // admin refill kept showing the old balance (0) even though
+  // /account — which fetches fresh on mount — showed 300. Both
+  // pages read the SAME token_balances row, so the DB was never
+  // wrong; the /create page was stale. Now the same fetch also
+  // runs on tab focus, on pageshow (Back-button / bfcache
+  // restore), and when the tab becomes visible again, so a refill
+  // shows up as soon as the customer returns to /create — no
+  // hard reload needed.
   useEffect(() => {
     const supabase = getSupabase();
     if (!supabase) return;
-    supabase.auth.getSession().then(async ({ data }) => {
+    async function loadServerTokens() {
+      const { data } = await supabase!.auth.getSession();
       const token = data.session?.access_token ?? null;
       setAuthToken(token);
       if (!token) return;
-      const res = await fetch("/api/tokens", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
-      if (json.mode === "server" && json.unlimited) {
-        setIsUnlimited(true);
-      } else if (json.mode === "server" && typeof json.balance === "number") {
-        setServerTokens(json.balance);
-        if (typeof json.total === "number") setServerTotal(json.total);
+      try {
+        const res = await fetch("/api/tokens", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
+        if (json.mode === "server" && json.unlimited) {
+          setIsUnlimited(true);
+        } else if (json.mode === "server" && typeof json.balance === "number") {
+          setServerTokens(json.balance);
+          if (typeof json.total === "number") setServerTotal(json.total);
+        }
+      } catch {
+        // Keep the last known balance — a failed refresh must not
+        // blank the pill or block generation.
       }
-    });
+    }
+    loadServerTokens();
+    const onVisible = () => {
+      if (!document.hidden) loadServerTokens();
+    };
+    window.addEventListener("focus", loadServerTokens);
+    window.addEventListener("pageshow", loadServerTokens);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", loadServerTokens);
+      window.removeEventListener("pageshow", loadServerTokens);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   function spendTokens(amount: number) {
