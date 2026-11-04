@@ -372,40 +372,59 @@ function CreatePageInner() {
   }, []);
 
   // Load the server balance once a session exists; guests stay local.
-  // BUGFIX 2026-11-04 (account 300 / create 0): this effect used to
-  // run ONLY on first mount, so a /create tab opened BEFORE an
-  // admin refill kept showing the old balance (0) even though
-  // /account — which fetches fresh on mount — showed 300. Both
-  // pages read the SAME token_balances row, so the DB was never
-  // wrong; the /create page was stale. Now the same fetch also
-  // runs on tab focus, on pageshow (Back-button / bfcache
-  // restore), and when the tab becomes visible again, so a refill
-  // shows up as soon as the customer returns to /create — no
-  // hard reload needed.
-  useEffect(() => {
+  // BUGFIX 2026-11-04 (account 300/400, create 0/100, twice):
+  // /api/me (for /account) and /api/tokens (for /create) both read
+  // the SAME token_balances row, so a fresh /create cannot show a
+  // different balance — unless /create never got a fresh server
+  // answer at all. The old code failed SILENTLY in that case:
+  // serverTokens stayed null, the pill fell back to the browser
+  // guest tokens (which can be 0), and the pill text still said
+  // "Server (login)" because that word is hardcoded in the render
+  // — it never proved the server fetch succeeded. So a 0/100 pill
+  // can mean "guest tokens, server fetch failed/stale", not "DB
+  // balance is 0". This fix makes that failure VISIBLE and
+  // retryable: a Refresh button next to the pill, and a warning
+  // when the server answers guest mode while logged in.
+  const [tokenMsg, setTokenMsg] = useState("");
+  const [tokenRefreshing, setTokenRefreshing] = useState(false);
+  async function loadServerTokens() {
     const supabase = getSupabase();
     if (!supabase) return;
-    async function loadServerTokens() {
-      const { data } = await supabase!.auth.getSession();
-      const token = data.session?.access_token ?? null;
-      setAuthToken(token);
-      if (!token) return;
-      try {
-        const res = await fetch("/api/tokens", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
-        if (json.mode === "server" && json.unlimited) {
-          setIsUnlimited(true);
-        } else if (json.mode === "server" && typeof json.balance === "number") {
-          setServerTokens(json.balance);
-          if (typeof json.total === "number") setServerTotal(json.total);
-        }
-      } catch {
-        // Keep the last known balance — a failed refresh must not
-        // blank the pill or block generation.
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token ?? null;
+    setAuthToken(token);
+    if (!token) return;
+    try {
+      const res = await fetch("/api/tokens", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { mode?: string; balance?: number; total?: number; unlimited?: boolean };
+      if (json.mode === "server" && json.unlimited) {
+        setIsUnlimited(true);
+        setTokenMsg("");
+      } else if (json.mode === "server" && typeof json.balance === "number") {
+        setServerTokens(json.balance);
+        if (typeof json.total === "number") setServerTotal(json.total);
+        setTokenMsg("");
+      } else {
+        // Logged in, but the server did not return a server
+        // balance — do NOT silently show guest tokens as if they
+        // were the server balance.
+        setTokenMsg(t("create.tokenGuestMode"));
       }
+    } catch {
+      setTokenMsg(t("create.tokenRefreshFailed"));
     }
+  }
+  async function refreshTokens() {
+    setTokenRefreshing(true);
+    setTokenMsg("");
+    await loadServerTokens();
+    setTokenRefreshing(false);
+    setTokenMsg((prev) => (prev ? prev : t("create.tokenRefreshed")));
+  }
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadServerTokens();
     const onVisible = () => {
       if (!document.hidden) loadServerTokens();
@@ -418,6 +437,7 @@ function CreatePageInner() {
       window.removeEventListener("pageshow", loadServerTokens);
       document.removeEventListener("visibilitychange", onVisible);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function spendTokens(amount: number) {
@@ -847,7 +867,18 @@ function CreatePageInner() {
                   ? t("create.tokenPillUnlimited")
                   : t("create.tokenPill", { tokens: effectiveTokens, start: Math.max(serverTotal ?? START_TOKENS, effectiveTokens), mode: t("create.modeServer"), provider: imageProvider === "cloudflare" ? t("create.providerCloudflare") : t("create.providerGemini") })}
               </span>
+              <button
+                type="button"
+                onClick={refreshTokens}
+                disabled={tokenRefreshing}
+                className="inline-flex min-h-[28px] items-center rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {tokenRefreshing ? t("create.tokenRefreshing") : `↻ ${t("create.tokenRefresh")}`}
+              </button>
             </div>
+          )}
+          {tokenMsg && (
+            <p className="mt-2 text-xs font-semibold text-white/90">{tokenMsg}</p>
           )}
         </div>
       </header>
