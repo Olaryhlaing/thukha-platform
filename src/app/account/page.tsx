@@ -12,6 +12,7 @@ export default function AccountPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
+  const [suspended, setSuspended] = useState(false);
   const [loaded, setLoaded] = useState(() => !supabaseConfigured());
   const [confirming, setConfirming] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -50,6 +51,7 @@ export default function AccountPage() {
           display_name?: string | null;
           avatar_url?: string | null;
           role?: string;
+          suspended?: boolean;
           balance?: number | null;
         };
         if (res.ok) {
@@ -57,6 +59,7 @@ export default function AccountPage() {
           setDisplayName(json.display_name ?? "");
           setAvatarUrl(json.avatar_url ?? null);
           setRole(json.role ?? "");
+          setSuspended(json.suspended ?? false);
           setBalance(json.balance ?? null);
           try {
             const hres = await fetch("/api/tokens/history", {
@@ -445,6 +448,12 @@ export default function AccountPage() {
           {t("account.readOnlyNote")}
         </p>
       </section>
+
+      {suspended && (
+        <p className="rounded-3xl border border-rose-300 bg-rose-50 p-4 text-sm font-bold text-rose-900 dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
+          {t("account.suspendedWarning")}
+        </p>
+      )}
 
       {/* Token history (Batch 1): generations spent + admin refills */}
       <section className="rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 /* Prototype admin token refill: an admin adds tokens to any user's
    server balance. Admin-only (profiles.role = 'admin', checked
@@ -79,5 +80,6 @@ export async function POST(request: Request) {
     event: "admin_token_refill",
     cost_tokens: amount,
   });
+  await logAudit(service, user.id, "admin_token_refill", userId, String(amount));
   return NextResponse.json({ ok: true, balance: nextBalance });
 }

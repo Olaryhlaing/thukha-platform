@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   // cannot set it, only the owner SQL promotion can.
   const { data: profile } = await service
     .from("profiles")
-    .select("role")
+    .select("role, suspended")
     .eq("id", user.id)
     .single();
   if (profile?.role === "admin") {
@@ -82,5 +82,5 @@ export async function GET(request: Request) {
   } catch {
     // Fallback above already applies.
   }
-  return NextResponse.json({ mode: "server" as const, balance: data.balance, total });
+  return NextResponse.json({ mode: "server" as const, balance: data.balance, total, suspended: profile?.suspended ?? false });
 }

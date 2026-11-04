@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   }
   const { data: profile } = await service
     .from("profiles")
-    .select("role, display_name, avatar_url")
+    .select("role, display_name, avatar_url, suspended")
     .eq("id", user.id)
     .single();
   const { data: balanceRow } = await service
@@ -39,12 +39,27 @@ export async function GET(request: Request) {
     .select("balance")
     .eq("owner_id", user.id)
     .single();
+  // New-customer free 100: a brand-new account has NO token_balances
+  // row until some API creates one. /api/tokens and the generate
+  // route already create it with 100, but /api/me did NOT — so a
+  // customer who opened /account first (before /create) saw "—"
+  // instead of 100, even though 100 free is the rule. Create the
+  // row here too, so 100 shows everywhere from the first login.
+  // Admins are unlimited and never need a balance row.
+  let balance = balanceRow?.balance ?? null;
+  if (balance === null && profile?.role !== "admin") {
+    const { error } = await service
+      .from("token_balances")
+      .insert({ owner_id: user.id, balance: 100 });
+    if (!error) balance = 100;
+  }
   return NextResponse.json({
     email: user.email,
     display_name: profile?.display_name ?? null,
     avatar_url: profile?.avatar_url ?? null,
     role: profile?.role ?? "customer",
-    balance: balanceRow?.balance ?? null,
+    suspended: profile?.suspended ?? false,
+    balance,
   });
 }
 

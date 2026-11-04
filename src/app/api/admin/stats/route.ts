@@ -30,9 +30,9 @@ export async function GET(request: Request) {
   // below (the old code reported users=50 / generations=20 as soon
   // as the lists hit their limits — a wrong admin dashboard).
   const [profiles, balances, generations, brands, designs, usersCount, generationsCount, allGenerations] = await Promise.all([
-    service.from("profiles").select("id, display_name, role, created_at").order("created_at", { ascending: false }).limit(50),
+    service.from("profiles").select("id, display_name, role, suspended, created_at").order("created_at", { ascending: false }).limit(50),
     service.from("token_balances").select("owner_id, balance"),
-    service.from("generations").select("id, owner_id, prompt, model, format, cost_tokens, created_at").order("created_at", { ascending: false }).limit(20),
+    service.from("generations").select("id, owner_id, prompt, model, format, cost_tokens, flagged, created_at").order("created_at", { ascending: false }).limit(20),
     service.from("brands").select("id", { count: "exact", head: true }),
     service.from("designs").select("id", { count: "exact", head: true }),
     service.from("profiles").select("id", { count: "exact", head: true }),

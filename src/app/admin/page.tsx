@@ -7,9 +7,9 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { serverErrorText } from "@/lib/i18n";
 
 type Stats = {
-  users: { id: string; display_name: string | null; role: string; created_at: string }[];
+  users: { id: string; display_name: string | null; role: string; suspended?: boolean; created_at: string }[];
   balances: { owner_id: string; balance: number }[];
-  generations: { id: string; owner_id: string | null; prompt: string; model: string; format: string | null; cost_tokens: number; created_at: string }[];
+  generations: { id: string; owner_id: string | null; prompt: string; model: string; format: string | null; cost_tokens: number; flagged?: boolean; created_at: string }[];
   perUser: { id: string; display_name: string | null; role: string; balance: number | null; generations: number; spent: number }[];
   counts: { users: number; brands: number; designs: number; generations: number };
 };
@@ -23,9 +23,17 @@ export default function AdminPage() {
   const [refillAmounts, setRefillAmounts] = useState<Record<string, string>>({});
   const [refillMessage, setRefillMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
-  type Health = { todayGenerations: number; todaySpent: number; totalGenerations: number; totalSpent: number; users: number; estimatedQuotaLeft: number };
+  type Health = { todayGenerations: number; todaySpent: number; totalGenerations: number; totalSpent: number; users: number; estimatedQuotaLeft: number; failuresToday?: number; failuresTotal?: number; failureRate?: number };
   const [health, setHealth] = useState<Health | null>(null);
   const [exportMessage, setExportMessage] = useState("");
+  type AuditLog = { id: string; actor_id: string | null; action: string; target_id: string | null; detail: string | null; created_at?: string; actor_name: string | null; target_name: string | null };
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  type Ann = { id: string; title: string; body: string; active: boolean; created_at?: string };
+  const [announcements, setAnnouncements] = useState<Ann[]>([]);
+  const [annTitle, setAnnTitle] = useState("");
+  const [annBody, setAnnBody] = useState("");
+  const [annMessage, setAnnMessage] = useState("");
+  const [adminActionMessage, setAdminActionMessage] = useState("");
 
   async function loadStats() {
     const supabase = getSupabase();
@@ -53,6 +61,20 @@ export default function AdminPage() {
       if (hres.ok) setHealth(hjson);
     } catch {
       // Health is extra info — stats still work without it.
+    }
+    try {
+      const ares = await fetch("/api/admin/audit", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ajson = (await ares.json()) as { logs?: AuditLog[] };
+      if (ares.ok) setAuditLogs(ajson.logs ?? []);
+      const nres = await fetch("/api/admin/announcements", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const njson = (await nres.json()) as { announcements?: Ann[] };
+      if (nres.ok) setAnnouncements(njson.announcements ?? []);
+    } catch {
+      // Audit/announcements are extra info — stats still work.
     }
   }
 
@@ -83,6 +105,92 @@ export default function AdminPage() {
       URL.revokeObjectURL(url);
     } catch {
       setExportMessage(t("admin.exportFailed"));
+    }
+  }
+
+  async function adminPost(path: string, body: unknown): Promise<{ ok: boolean; error?: string }> {
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return { ok: false };
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const json = (await res.json()) as { error?: string };
+      return { ok: res.ok, error: json.error };
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  async function suspendUser(userId: string, suspended: boolean) {
+    const r = await adminPost("/api/admin/suspend", { userId, suspended });
+    if (!r.ok) {
+      setAdminActionMessage(r.error ?? t("admin.suspendFailed"));
+      return;
+    }
+    setAdminActionMessage("");
+    setStats((prev) => prev ? { ...prev, users: prev.users.map((u) => (u.id === userId ? { ...u, suspended } : u)) } : prev);
+  }
+
+  async function flagGeneration(id: string, flagged: boolean) {
+    const r = await adminPost("/api/admin/flag", { id, flagged });
+    if (!r.ok) {
+      setAdminActionMessage(r.error ?? t("admin.flagFailed"));
+      return;
+    }
+    setAdminActionMessage("");
+    setStats((prev) => prev ? { ...prev, generations: prev.generations.map((g) => (g.id === id ? { ...g, flagged } : g)) } : prev);
+  }
+
+  async function createAnnouncement() {
+    if (!annTitle.trim() || !annBody.trim()) {
+      setAnnMessage(t("admin.annFailed"));
+      return;
+    }
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: annTitle, body: annBody }),
+      });
+      const json = (await res.json()) as { id?: string; error?: string };
+      if (!res.ok || !json.id) {
+        setAnnMessage(json.error ?? t("admin.annFailed"));
+        return;
+      }
+      setAnnMessage(t("admin.annCreated"));
+      setAnnTitle("");
+      setAnnBody("");
+      setAnnouncements((prev) => [{ id: json.id as string, title: annTitle, body: annBody, active: true, created_at: new Date().toISOString() }, ...prev]);
+    } catch {
+      setAnnMessage(t("admin.annFailed"));
+    }
+  }
+
+  async function toggleAnnouncement(id: string, active: boolean) {
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/announcements", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, active }),
+      });
+      if (!res.ok) {
+        setAnnMessage(t("admin.annFailed"));
+        return;
+      }
+      setAnnMessage("");
+      setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, active } : a)));
+    } catch {
+      setAnnMessage(t("admin.annFailed"));
     }
   }
 
@@ -239,8 +347,11 @@ export default function AdminPage() {
             <div><p className="text-2xl font-black">{health.totalGenerations}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthTotal")}</p></div>
             <div><p className="text-2xl font-black">{health.todaySpent}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthTodaySpent")}</p></div>
             <div><p className="text-2xl font-black">{health.estimatedQuotaLeft}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthEstimate")}</p></div>
+            <div><p className="text-2xl font-black">{health.failuresToday ?? 0}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthFailuresToday")}</p></div>
+            <div><p className="text-2xl font-black">{health.failureRate ?? 0}%</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthFailureRate")}</p></div>
           </div>
           <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("admin.healthNote")}</p>
+          <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("admin.healthFailureNote")}</p>
         </section>
       )}
 
@@ -313,6 +424,18 @@ export default function AdminPage() {
                   >
                     {t("admin.refill")}
                   </button>
+                  {u.role !== "admin" && (
+                    <button
+                      type="button"
+                      onClick={() => suspendUser(u.id, !u.suspended)}
+                      className="inline-flex min-h-[38px] items-center rounded-xl bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
+                    >
+                      {u.suspended ? t("admin.unsuspend") : t("admin.suspend")}
+                    </button>
+                  )}
+                  {u.suspended && (
+                    <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700 dark:bg-rose-950 dark:text-rose-300">{t("admin.suspendedBadge")}</span>
+                  )}
                 </div>
               </li>
             ))}
@@ -382,6 +505,16 @@ export default function AdminPage() {
                     {g.model} • {g.format ?? "standard"} • {g.cost_tokens} token • {new Date(g.created_at).toLocaleDateString()}
                   </p>
                 </div>
+                {g.flagged && (
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">{t("admin.flaggedBadge")}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => flagGeneration(g.id, !g.flagged)}
+                  className="inline-flex min-h-[38px] w-fit items-center justify-center rounded-xl bg-amber-50 px-3.5 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
+                >
+                  🚩 {g.flagged ? t("admin.unflag") : t("admin.flag")}
+                </button>
                 <button
                   type="button"
                   onClick={() => deleteGeneration(g.id)}
@@ -393,6 +526,64 @@ export default function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Audit Log (Batch 2) */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.auditTitle")}</h2>
+        {adminActionMessage && <p className="text-sm font-semibold">{adminActionMessage}</p>}
+        {auditLogs.length === 0 ? (
+          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("admin.auditEmpty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {auditLogs.slice(0, 50).map((l) => (
+              <li key={l.id} className="rounded-xl bg-white/60 p-3 text-sm dark:bg-black/20">
+                <p className="font-bold">{l.action}</p>
+                <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
+                  {l.actor_name ?? l.actor_id ?? "—"} → {l.target_name ?? l.target_id ?? "—"}
+                  {l.detail ? ` • ${l.detail}` : ""}
+                  {l.created_at ? ` • ${new Date(l.created_at).toLocaleString()}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Announcements (Batch 2) */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.annTitle")}</h2>
+        {annMessage && <p className="text-sm font-semibold">{annMessage}</p>}
+        <input
+          type="text"
+          value={annTitle}
+          onChange={(e) => setAnnTitle(e.target.value)}
+          placeholder={t("admin.annTitleLabel")}
+          className="rounded-xl border border-thukha-lilac/40 bg-white px-3 py-2 text-sm outline-none dark:bg-thukha-indigo"
+        />
+        <textarea
+          value={annBody}
+          onChange={(e) => setAnnBody(e.target.value)}
+          placeholder={t("admin.annBodyLabel")}
+          rows={3}
+          className="rounded-xl border border-thukha-lilac/40 bg-white px-3 py-2 text-sm outline-none dark:bg-thukha-indigo"
+        />
+        <button type="button" onClick={createAnnouncement} className="colorful-btn-gradient shimmer-hover min-h-[44px] w-fit rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md">
+          {t("admin.annCreate")}
+        </button>
+        <ul className="flex flex-col gap-2">
+          {announcements.map((a) => (
+            <li key={a.id} className="flex flex-col gap-2 rounded-xl bg-white/60 p-3 text-sm dark:bg-black/20 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-bold">{a.title} <span className="text-xs font-bold text-thukha-violet dark:text-thukha-lilac">{a.active ? t("admin.annActiveBadge") : t("admin.annInactiveBadge")}</span></p>
+                <p className="text-thukha-indigo/70 dark:text-white/70">{a.body}</p>
+              </div>
+              <button type="button" onClick={() => toggleAnnouncement(a.id, !a.active)} className="inline-flex min-h-[38px] w-fit items-center rounded-xl bg-white px-4 py-1.5 text-xs font-bold dark:bg-black/20">
+                {a.active ? t("admin.annDeactivate") : t("admin.annActivate")}
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
     </main>
   );

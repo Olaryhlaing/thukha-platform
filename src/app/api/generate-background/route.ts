@@ -192,6 +192,34 @@ async function chargeServer(
   return { ok: true, serverBalance: next };
 }
 
+/* Batch 2 failure logging: best-effort, never blocks the error
+   response to the customer. Only provider failures are logged
+   (a provider was called and returned an error or no image).
+   Validation errors, insufficient tokens and charge failures
+   are NOT provider failures and are not logged here. Guest
+   failures are logged with owner_id null — they still count
+   toward the admin failure rate. */
+async function logFailure(
+  service: SupabaseClient | null,
+  ownerId: string | null,
+  prompt: string,
+  model: string,
+  errorMsg: string,
+): Promise<void> {
+  if (!service) return;
+  try {
+    await service.from("generation_failures").insert({
+      owner_id: ownerId,
+      prompt: prompt.slice(0, 500),
+      model,
+      error: errorMsg.slice(0, 200),
+    });
+  } catch {
+    // Failure logging must never turn a provider error into a
+    // second, different error for the customer.
+  }
+}
+
 /* Dev 1 API contract (DEV1-DETAILED-GUIDE.md §5) — custom AI images.
    Gemini only (2026-10-30 decision): the Gemini key stays server-only
    and never reaches the browser. The client sends a free prompt +
@@ -351,6 +379,17 @@ export async function POST(request: Request) {
     const service = serverUser ? getServiceSupabase() : null;
     // Admin accounts are unlimited: skip the balance pre-check.
     const isAdmin = serverUser && service ? await isAdminRole(service, serverUser) : false;
+    // Batch 2 suspend: a suspended customer can still log in and
+    // view /account, but cannot generate. Admins are never blocked.
+    if (serverUser && service && !isAdmin) {
+      const { data: prof } = await service.from("profiles").select("suspended").eq("id", serverUser.id).single();
+      if (prof?.suspended) {
+        return NextResponse.json(
+          { error: "Account ခဏ ပိတ်ထားတယ်။ Admin ကို ဆက်သွယ်ပါ။" },
+          { status: 403 },
+        );
+      }
+    }
     if (serverUser && service && !isAdmin) {
       const balance = await fetchServerBalance(service, serverUser);
       if (balance !== null && balance < cost) {
@@ -415,8 +454,10 @@ export async function POST(request: Request) {
         clearTimeout(timeout);
       }
       if (!cfRes.ok) {
+        const cfErr = await cloudflareErrorMessage(cfRes);
+        await logFailure(service, serverUser?.id ?? null, userPrompt, cfModel, cfErr);
         return NextResponse.json(
-          { error: await cloudflareErrorMessage(cfRes), configured: true },
+          { error: cfErr, configured: true },
           { status: 502 },
         );
       }
@@ -430,6 +471,7 @@ export async function POST(request: Request) {
         cfImage = buf.length > 0 ? buf.toString("base64") : null;
       }
       if (!cfImage) {
+        await logFailure(service, serverUser?.id ?? null, userPrompt, cfModel, "Cloudflare က ပုံ ပြန်မလာပါ။");
         return NextResponse.json(
           { error: "Cloudflare က ပုံ ပြန်မလာပါ။ ထပ်ကြိုးစားပါ။", configured: true },
           { status: 502 },
@@ -494,8 +536,10 @@ export async function POST(request: Request) {
         clearTimeout(timeout);
       }
       if (!geminiRes.ok) {
+        const gemErr = await geminiErrorMessage(geminiRes);
+        await logFailure(service, serverUser?.id ?? null, userPrompt, model, gemErr);
         return NextResponse.json(
-          { error: await geminiErrorMessage(geminiRes), configured: true },
+          { error: gemErr, configured: true },
           { status: 502 },
         );
       }
@@ -504,6 +548,7 @@ export async function POST(request: Request) {
       };
       const part = geminiData.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);
       if (!part?.inlineData?.data) {
+        await logFailure(service, serverUser?.id ?? null, userPrompt, model, "AI ပုံ ပြန်မလာပါ။");
         return NextResponse.json(
           { error: "AI ပုံ ပြန်မလာပါ။ ထပ်ကြိုးစားပါ။", configured: true },
           { status: 502 },
@@ -561,6 +606,7 @@ export async function POST(request: Request) {
         clearTimeout(timeout);
       }
       if (!editsRes.ok) {
+        await logFailure(service, serverUser?.id ?? null, userPrompt, model, "Provider က edits ကို မထောက်ပံ့ပါ။");
         return NextResponse.json(
           { error: "ပုံထည့်ပြီး ထုတ်လို့ မရသေးပါ။ Provider က edits ကို မထောက်ပံ့ရင် ပုံကို ဖြုတ်ပြီး စာနဲ့ပဲ ထုတ်ကြည့်ပါ။", configured: true },
           { status: 502 },
@@ -574,6 +620,7 @@ export async function POST(request: Request) {
         ? `data:image/png;base64,${first.b64_json}`
         : first?.url;
       if (!imageUrl) {
+        await logFailure(service, serverUser?.id ?? null, userPrompt, model, "AI ပုံ ပြန်မလာပါ။");
         return NextResponse.json(
           { error: "AI ပုံ ပြန်မလာပါ။ ထပ်ကြိုးစားပါ။", configured: true },
           { status: 502 },
@@ -620,8 +667,10 @@ export async function POST(request: Request) {
     }
 
     if (!res.ok) {
+      const finalErr = await geminiErrorMessage(res);
+      await logFailure(service, serverUser?.id ?? null, userPrompt, model, finalErr);
       return NextResponse.json(
-        { error: await geminiErrorMessage(res), configured: true },
+        { error: finalErr, configured: true },
         { status: 502 },
       );
     }
@@ -633,6 +682,7 @@ export async function POST(request: Request) {
       ? `data:image/png;base64,${first.b64_json}`
       : first?.url;
     if (!imageUrl) {
+      await logFailure(service, serverUser?.id ?? null, userPrompt, model, "AI ပုံ ပြန်မလာပါ။");
       return NextResponse.json(
         { error: "AI ပုံ ပြန်မလာပါ။ ထပ်ကြိုးစားပါ။", configured: true },
         { status: 502 },

@@ -220,6 +220,10 @@ function CreatePageInner() {
   // Admin accounts are unlimited (role=admin, server-side): no
   // balance check, no deduction — the pill shows ∞ instead of a number.
   const [isUnlimited, setIsUnlimited] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
+  type Ann = { id: string; title: string; body: string; created_at?: string };
+  const [announcements, setAnnouncements] = useState<Ann[]>([]);
+  const [dismissedAnns, setDismissedAnns] = useState<Set<string>>(new Set());
   const [authToken, setAuthToken] = useState<string | null>(null);
   // Image provider (from the generate API's GET): "cloudflare" means
   // the free FLUX model, which cannot edit reference images.
@@ -371,6 +375,19 @@ function CreatePageInner() {
       .catch(() => {});
   }, []);
 
+  // Batch 2 announcements: active broadcasts from the admin,
+  // shown at the top of /create. Dismiss is per page load only —
+  // the announcement returns on the next visit, so a customer
+  // cannot permanently hide a maintenance notice by accident.
+  useEffect(() => {
+    fetch("/api/announcements")
+      .then((res) => res.json())
+      .then((json) => {
+        if (Array.isArray(json.announcements)) setAnnouncements(json.announcements);
+      })
+      .catch(() => {});
+  }, []);
+
   // Load the server balance once a session exists; guests stay local.
   // BUGFIX 2026-11-04 (account 300/400, create 0/100, twice):
   // /api/me (for /account) and /api/tokens (for /create) both read
@@ -418,6 +435,7 @@ function CreatePageInner() {
       } else if (json.mode === "server" && typeof json.balance === "number") {
         setServerTokens(json.balance);
         if (typeof json.total === "number") setServerTotal(json.total);
+        setIsSuspended((json as { suspended?: boolean }).suspended ?? false);
         setTokenMsg("");
       } else {
         // Logged in, but the server did not return a server
@@ -858,6 +876,23 @@ function CreatePageInner() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
+      {isSuspended && (
+        <p className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm font-bold text-rose-900 dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
+          {t("create.suspendedWarning")}
+        </p>
+      )}
+      {announcements.filter((a) => !dismissedAnns.has(a.id)).map((a) => (
+        <div key={a.id} className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-thukha-violet/30 bg-violet-50 p-4 dark:border-white/10 dark:bg-white/5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-thukha-violet dark:text-thukha-lilac">{t("create.announcement")}</p>
+            <p className="mt-1 font-bold">{a.title}</p>
+            <p className="text-sm leading-6">{a.body}</p>
+          </div>
+          <button type="button" onClick={() => setDismissedAnns((prev) => new Set(prev).add(a.id))} aria-label="Dismiss" className="shrink-0 rounded-full border border-thukha-violet/30 px-3 py-1 text-xs font-bold">
+            ✕
+          </button>
+        </div>
+      ))}
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-thukha-violet via-[#7c3aed] to-[#2563eb] p-6 text-white shadow-xl shadow-thukha-violet/25 sm:p-8">
         <div
           className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-pink-500/30 to-thukha-teal/30 blur-2xl animate-thu-aurora-spin"
@@ -1186,7 +1221,7 @@ function CreatePageInner() {
           <button
             type="button"
             onClick={generateAi}
-            disabled={aiLoading}
+            disabled={aiLoading || isSuspended}
             className="colorful-btn-gradient shimmer-hover min-h-[50px] w-full rounded-2xl px-8 py-3.5 text-base font-black text-white shadow-xl shadow-thukha-violet/30 disabled:opacity-50"
           >
             {aiLoading ? (

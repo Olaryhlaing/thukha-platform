@@ -16,13 +16,18 @@ export async function GET(request: Request) {
   const { data: profile } = await service.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role !== "admin") return NextResponse.json({ error: "Admin မဟုတ်လို့ လုပ်လို့ မရပါ။" }, { status: 403 });
   const startToday = new Date(); startToday.setUTCHours(0, 0, 0, 0);
-  const [{ data: todayGens }, { data: allGens }, { count: userCount }] = await Promise.all([
+  const [{ data: todayGens }, { data: allGens }, { count: userCount }, { data: todayFails }, { data: allFails }] = await Promise.all([
     service.from("generations").select("cost_tokens").gte("created_at", startToday.toISOString()),
     service.from("generations").select("cost_tokens"),
     service.from("profiles").select("id", { count: "exact", head: true }),
+    service.from("generation_failures").select("id").gte("created_at", startToday.toISOString()),
+    service.from("generation_failures").select("id"),
   ]);
   const today = todayGens ?? [];
   const all = allGens ?? [];
+  const failsToday = (todayFails ?? []).length;
+  const failsTotal = (allFails ?? []).length;
+  const attemptsTotal = all.length + failsTotal;
   return NextResponse.json({
     todayGenerations: today.length,
     todaySpent: today.reduce((s, g) => s + (g.cost_tokens ?? 0), 0),
@@ -30,5 +35,11 @@ export async function GET(request: Request) {
     totalSpent: all.reduce((s, g) => s + (g.cost_tokens ?? 0), 0),
     users: userCount ?? 0,
     estimatedQuotaLeft: Math.max(0, 170 - today.length),
+    failuresToday: failsToday,
+    failuresTotal: failsTotal,
+    // Failure rate is only meaningful from Batch 2 onward, when
+    // failures started being logged — older attempts have no
+    // failure rows, so an old period would understate the rate.
+    failureRate: attemptsTotal > 0 ? Math.round((failsTotal / attemptsTotal) * 1000) / 10 : 0,
   });
 }

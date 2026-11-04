@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 /* Admin-only generation delete: removes one generations log row
    (prompt/model/cost record only — images are never stored as
@@ -33,10 +34,11 @@ export async function DELETE(request: Request) {
     .from("generations")
     .delete()
     .eq("id", id)
-    .select("id")
+    .select("id, owner_id")
     .single();
   if (error || !deleted) {
     return NextResponse.json({ error: "ဒီ generation ကို မတွေ့ပါ။" }, { status: 404 });
   }
+  await logAudit(service, user.id, "delete_generation", id, deleted.owner_id ?? null);
   return NextResponse.json({ ok: true });
 }
