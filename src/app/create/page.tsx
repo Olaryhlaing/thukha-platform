@@ -336,6 +336,14 @@ function CreatePageInner() {
   }
   const [overlayMessage, setOverlayMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  // Caption + hashtags (Batch 1 launch feature): the template
+  // /api/generate-caption already existed but /create never called
+  // it. This is a template, not an AI model — the UI says so.
+  const [captionOptions, setCaptionOptions] = useState<string[]>([]);
+  const [captionHashtags, setCaptionHashtags] = useState<string[]>([]);
+  const [captionLoading, setCaptionLoading] = useState(false);
+  const [captionMsg, setCaptionMsg] = useState("");
+  const [copiedCaption, setCopiedCaption] = useState<string | null>(null);
 
   const channelInfo = CHANNELS.find((c) => c.id === channel) ?? CHANNELS[0];
   const cost = tokenCost({
@@ -715,6 +723,46 @@ function CreatePageInner() {
     };
     img.onerror = () => setOverlayMessage(t("create.errImageOpenFailed"));
     img.src = selected;
+  }
+
+  async function generateCaption() {
+    setCaptionLoading(true);
+    setCaptionMsg("");
+    try {
+      const res = await fetch("/api/generate-caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brief: {
+            businessName: businessName || undefined,
+            product: aiPrompt || overlayHeadline || undefined,
+            goal,
+            channel,
+            headline: overlayHeadline || undefined,
+          },
+          tone: goal.includes("Promotion") ? "discount" : "friendly",
+        }),
+      });
+      const json = (await res.json()) as { options?: string[]; hashtags?: string[] };
+      if (!res.ok || !json.options) {
+        setCaptionMsg(t("create.captionFailed"));
+      } else {
+        setCaptionOptions(json.options);
+        setCaptionHashtags(json.hashtags ?? []);
+      }
+    } catch {
+      setCaptionMsg(t("create.captionFailed"));
+    }
+    setCaptionLoading(false);
+  }
+
+  async function copyCaption(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCaption(text);
+    } catch {
+      setCaptionMsg(t("create.captionFailed"));
+    }
   }
 
   async function saveDesign() {
@@ -1318,6 +1366,41 @@ function CreatePageInner() {
               {t("create.saveDesign")}
             </button>
             {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}
+            {/* Caption + hashtags for the Facebook post */}
+            <div className="rounded-2xl border border-thukha-lilac/30 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
+              <h3 className="text-sm font-bold">{t("create.captionTitle")}</h3>
+              <button
+                type="button"
+                onClick={generateCaption}
+                disabled={captionLoading}
+                className="mt-2 min-h-[44px] rounded-full bg-thukha-violet px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {captionLoading ? t("create.captionLoading") : t("create.captionButton")}
+              </button>
+              {captionMsg && <p className="mt-2 text-sm font-semibold">{captionMsg}</p>}
+              {captionOptions.length > 0 && (
+                <ul className="mt-3 flex flex-col gap-2">
+                  {captionOptions.map((opt) => (
+                    <li key={opt} className="flex items-start justify-between gap-2 rounded-xl bg-white/60 p-3 text-sm leading-6 dark:bg-black/20">
+                      <span>{opt}</span>
+                      <button
+                        type="button"
+                        onClick={() => copyCaption(opt)}
+                        className="shrink-0 rounded-full border border-thukha-violet/40 px-3 py-1 text-xs font-bold text-thukha-violet dark:text-thukha-lilac"
+                      >
+                        {copiedCaption === opt ? t("create.captionCopied") : t("create.captionCopy")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {captionHashtags.length > 0 && (
+                <p className="mt-2 text-sm text-thukha-violet dark:text-thukha-lilac">
+                  {t("create.captionHashtags")}: {captionHashtags.join(" ")}
+                </p>
+              )}
+              <p className="mt-2 text-xs leading-5 text-thukha-indigo/70 dark:text-white/70">{t("create.captionNote")}</p>
+            </div>
           </>
         ) : null}
         {aiImages.length > 1 && (

@@ -23,6 +23,9 @@ export default function AdminPage() {
   const [refillAmounts, setRefillAmounts] = useState<Record<string, string>>({});
   const [refillMessage, setRefillMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
+  type Health = { todayGenerations: number; todaySpent: number; totalGenerations: number; totalSpent: number; users: number; estimatedQuotaLeft: number };
+  const [health, setHealth] = useState<Health | null>(null);
+  const [exportMessage, setExportMessage] = useState("");
 
   async function loadStats() {
     const supabase = getSupabase();
@@ -42,12 +45,46 @@ export default function AdminPage() {
       return;
     }
     setStats(json);
+    try {
+      const hres = await fetch("/api/admin/health", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const hjson = (await hres.json()) as Health;
+      if (hres.ok) setHealth(hjson);
+    } catch {
+      // Health is extra info — stats still work without it.
+    }
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     loadStats();
   }, []);
+
+  async function exportCsv(type: "users" | "generations") {
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    setExportMessage("");
+    try {
+      const res = await fetch(`/api/admin/export?type=${type}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setExportMessage(t("admin.exportFailed"));
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `thukha-${type}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportMessage(t("admin.exportFailed"));
+    }
+  }
 
   async function refill(userId: string) {
     const amount = Math.floor(Number(refillAmounts[userId] ?? 100));
@@ -192,6 +229,35 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      {/* System Health (Batch 1) */}
+      {health && (
+        <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+          <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.healthTitle")}</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div><p className="text-2xl font-black">{health.todayGenerations}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthToday")}</p></div>
+            <div><p className="text-2xl font-black">{health.totalGenerations}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthTotal")}</p></div>
+            <div><p className="text-2xl font-black">{health.todaySpent}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthTodaySpent")}</p></div>
+            <div><p className="text-2xl font-black">{health.estimatedQuotaLeft}</p><p className="text-xs font-bold text-thukha-indigo/60 dark:text-white/60">{t("admin.healthEstimate")}</p></div>
+          </div>
+          <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("admin.healthNote")}</p>
+        </section>
+      )}
+
+      {/* Data Export (Batch 1) */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.exportTitle")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("admin.exportNote")}</p>
+        {exportMessage && <p className="text-sm font-semibold">{exportMessage}</p>}
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => exportCsv("users")} className="colorful-btn-gradient shimmer-hover min-h-[44px] rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md">
+            {t("admin.exportUsers")}
+          </button>
+          <button type="button" onClick={() => exportCsv("generations")} className="colorful-btn-gradient shimmer-hover min-h-[44px] rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md">
+            {t("admin.exportGenerations")}
+          </button>
+        </div>
+      </section>
 
       {/* Users & Token Balances */}
       <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">

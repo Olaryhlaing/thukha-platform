@@ -28,6 +28,8 @@ export default function AccountPage() {
   const [pwMsg, setPwMsg] = useState("");
   const [savingPw, setSavingPw] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  type TokenEvent = { type: string; amount: number; prompt?: string | null; format?: string | null; created_at?: string };
+  const [tokenHistory, setTokenHistory] = useState<TokenEvent[]>([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -56,6 +58,15 @@ export default function AccountPage() {
           setAvatarUrl(json.avatar_url ?? null);
           setRole(json.role ?? "");
           setBalance(json.balance ?? null);
+          try {
+            const hres = await fetch("/api/tokens/history", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const hjson = (await hres.json()) as { events?: TokenEvent[] };
+            if (hres.ok) setTokenHistory(hjson.events ?? []);
+          } catch {
+            // History is extra info — the account page still works.
+          }
         }
       } catch {
         // Leave not-logged-in branch below
@@ -433,6 +444,37 @@ export default function AccountPage() {
         <p className="mt-4 text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
           {t("account.readOnlyNote")}
         </p>
+      </section>
+
+      {/* Token history (Batch 1): generations spent + admin refills */}
+      <section className="rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-lg font-bold">{t("account.tokenHistoryTitle")}</h2>
+        {role !== "admin" && balance !== null && balance < 20 && (
+          <p className="mt-2 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            {t("account.tokenLowWarning", { balance })}
+          </p>
+        )}
+        <p className="mt-2 text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("account.tokenHistoryNote")}</p>
+        {tokenHistory.length === 0 ? (
+          <p className="mt-3 text-sm text-thukha-indigo/70 dark:text-white/70">{t("account.tokenHistoryEmpty")}</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-2">
+            {tokenHistory.map((ev, i) => (
+              <li key={`${ev.created_at}-${i}`} className="flex items-center justify-between gap-3 rounded-xl bg-white/60 p-3 text-sm dark:bg-black/20">
+                <div>
+                  <p className="font-bold">
+                    {ev.type === "refill" ? t("account.tokenHistoryRefill") : t("account.tokenHistorySpent")}
+                    {ev.prompt ? <span className="font-normal text-thukha-indigo/70 dark:text-white/70"> — {ev.prompt.slice(0, 60)}</span> : null}
+                  </p>
+                  {ev.created_at && <p className="text-xs text-thukha-indigo/60 dark:text-white/60">{new Date(ev.created_at).toLocaleString()}</p>}
+                </div>
+                <span className={`shrink-0 font-black ${ev.amount >= 0 ? "text-teal-600 dark:text-teal-300" : "text-rose-600 dark:text-rose-300"}`}>
+                  {ev.amount >= 0 ? `+${ev.amount}` : ev.amount}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {/* Danger zone card */}

@@ -28,6 +28,8 @@ export default function DesignsPage() {
     return readGuestDesigns();
   });
   const [loggedIn, setLoggedIn] = useState(false);
+  type Generation = { id: string; prompt: string; model: string; format: string | null; cost_tokens: number; created_at?: string };
+  const [generations, setGenerations] = useState<Generation[]>([]);
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -41,6 +43,15 @@ export default function DesignsPage() {
       });
       const json = (await res.json()) as { designs?: Design[] };
       setDesigns(json.designs ?? []);
+      try {
+        const gres = await fetch("/api/generations", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const gjson = (await gres.json()) as { generations?: Generation[] };
+        if (gres.ok) setGenerations(gjson.generations ?? []);
+      } catch {
+        // History is extra info — designs still work without it.
+      }
     });
   }, []);
 
@@ -146,6 +157,36 @@ export default function DesignsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {loggedIn && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("designs.historyTitle")}</h2>
+          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("designs.note")}</p>
+          {generations.length === 0 ? (
+            <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("designs.historyEmpty")}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {generations.map((g) => {
+                const channelFor = g.format === "story" ? "Story" : g.format === "cover" ? "Cover" : "Facebook post";
+                return (
+                  <li key={g.id} className="flex flex-col gap-2 rounded-2xl border border-thukha-lilac/30 bg-white/75 p-4 dark:border-white/10 dark:bg-thukha-indigo/70">
+                    <p className="text-sm leading-6">&ldquo;{g.prompt}&rdquo;</p>
+                    <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
+                      {g.created_at ? new Date(g.created_at).toLocaleString() : ""} • {g.format ?? ""} • {t("designs.historySpent")}: {g.cost_tokens}
+                    </p>
+                    <Link
+                      href={`/create?prompt=${encodeURIComponent(g.prompt)}&channel=${encodeURIComponent(channelFor)}`}
+                      className="inline-flex min-h-[40px] w-fit items-center justify-center rounded-xl bg-thukha-violet/10 px-4 py-2 text-xs font-bold text-thukha-violet dark:bg-white/5 dark:text-thukha-lilac"
+                    >
+                      ⚡ {t("designs.recreate")}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       )}
     </main>
   );
