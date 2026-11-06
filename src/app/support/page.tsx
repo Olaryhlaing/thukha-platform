@@ -126,7 +126,7 @@ export default function SupportPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-thukha-violet/30 bg-thukha-violet/10 px-3.5 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:bg-white/10 dark:text-thukha-lilac">
@@ -140,21 +140,13 @@ export default function SupportPage() {
         <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("support.subtitle")}</p>
       </div>
 
-      {/* FAQ */}
-      <section className="mt-8 flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
-        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.faqTitle")}</h2>
-        <div className="flex flex-col gap-3">
-          {faqs.map(([q, a]) => (
-            <div key={q} className="rounded-2xl border border-thukha-lilac/25 bg-white/50 p-4 dark:border-white/5 dark:bg-white/5">
-              <p className="font-bold text-thukha-indigo dark:text-white">{q}</p>
-              <p className="mt-1 text-sm leading-7 text-thukha-indigo/80 dark:text-white/80">{a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
+      {/* Desktop: two columns — ticket form + my tickets on the
+          left, FAQ on the right (sticky). Mobile: one column,
+          same order. */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex min-w-0 flex-col gap-6">
       {/* Ticket form */}
-      <section className="mt-6 flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
         <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.formTitle")}</h2>
         {!supabaseConfigured() ? (
           <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("common.supabaseNotConnected")}</p>
@@ -228,7 +220,7 @@ export default function SupportPage() {
 
       {/* My tickets (customers only — admins answer tickets on /admin) */}
       {loggedIn && !isAdmin && (
-        <section id="tickets" className="mt-6 flex scroll-mt-24 flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <section id="tickets" className="flex scroll-mt-24 flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
           <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.myTickets")}</h2>
           {tickets.length === 0 ? (
             <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("support.empty")}</p>
@@ -256,6 +248,25 @@ export default function SupportPage() {
           )}
         </section>
       )}
+        </div>
+        <div className="min-w-0">
+          <div className="lg:sticky lg:top-24">
+      {/* FAQ */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.faqTitle")}</h2>
+        <div className="flex flex-col gap-3">
+          {faqs.map(([q, a]) => (
+            <div key={q} className="rounded-2xl border border-thukha-lilac/25 bg-white/50 p-4 dark:border-white/5 dark:bg-white/5">
+              <p className="font-bold text-thukha-indigo dark:text-white">{q}</p>
+              <p className="mt-1 text-sm leading-7 text-thukha-indigo/80 dark:text-white/80">{a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
