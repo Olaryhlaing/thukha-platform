@@ -475,6 +475,8 @@ const my: Dict = {
   "support.adminMarkResolved": "ဖြေရှင်းပြီးပြီလို့ မှတ်ပါ",
   "support.adminSaved": "အဖြေ သိမ်းပြီးပြီ။",
   "support.adminFailed": "သိမ်း၍ မရပါ။ ထပ်ကြိုးစားပါ။",
+  "support.adminNotice": "Admin Account နဲ့ ဝင်ထားတယ် — ဒီမှာ Ticket တင်စရာ မလိုဘူး။ Customer တွေတင်တဲ့ Ticket တွေကို /admin မှာ ကြည့်ပြီး အဖြေပေးပါ။",
+  "support.adminGoToInbox": "Admin Inbox ကို သွားပါ",
 };
 
 const en: Dict = {
@@ -939,6 +941,8 @@ const en: Dict = {
   "support.adminMarkResolved": "Mark as resolved",
   "support.adminSaved": "Reply saved.",
   "support.adminFailed": "Could not save. Please try again.",
+  "support.adminNotice": "You are logged in as an admin — no need to open a ticket here. View customer tickets and reply to them on /admin.",
+  "support.adminGoToInbox": "Go to Admin Inbox",
 };
 
 export const dict: Record<Lang, Dict> = { my, en };

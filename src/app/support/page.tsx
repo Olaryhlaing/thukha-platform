@@ -22,6 +22,7 @@ export default function SupportPage() {
   const { t, lang } = useLanguage();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [category, setCategory] = useState<string>("token");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -46,6 +47,15 @@ export default function SupportPage() {
       return;
     }
     setLoggedIn(true);
+    try {
+      const mres = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const mjson = (await mres.json()) as { role?: string };
+      if (mres.ok) setIsAdmin(mjson.role === "admin");
+    } catch {
+      // Role check is extra — a failed check just keeps the customer view.
+    }
     try {
       const res = await fetch("/api/support", {
         headers: { Authorization: `Bearer ${token}` },
@@ -143,6 +153,16 @@ export default function SupportPage() {
               {t("common.loginLink")} →
             </Link>
           </p>
+        ) : isAdmin ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("support.adminNotice")}</p>
+            <Link
+              href="/admin"
+              className="colorful-btn-gradient shimmer-hover inline-flex min-h-[44px] w-fit items-center justify-center rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md"
+            >
+              {t("support.adminGoToInbox")} →
+            </Link>
+          </div>
         ) : (
           <>
             {formMessage && <p className="text-sm font-semibold">{formMessage}</p>}
@@ -194,8 +214,8 @@ export default function SupportPage() {
         )}
       </section>
 
-      {/* My tickets */}
-      {loggedIn && (
+      {/* My tickets (customers only — admins answer tickets on /admin) */}
+      {loggedIn && !isAdmin && (
         <section className="mt-6 flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
           <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.myTickets")}</h2>
           {tickets.length === 0 ? (
