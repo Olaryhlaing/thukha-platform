@@ -30,6 +30,8 @@ export default function SupportPage() {
   const [message, setMessage] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [sending, setSending] = useState(false);
+  // FAQ accordion: which question is open (first one open by default).
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const faqs: [string, string][] = [
     [t("support.faq1q"), t("support.faq1a")],
@@ -255,12 +257,47 @@ export default function SupportPage() {
       <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
         <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.faqTitle")}</h2>
         <div className="flex flex-col gap-3">
-          {faqs.map(([q, a]) => (
-            <div key={q} className="rounded-2xl border border-thukha-lilac/25 bg-white/50 p-4 dark:border-white/5 dark:bg-white/5">
-              <p className="font-bold text-thukha-indigo dark:text-white">{q}</p>
-              <p className="mt-1 text-sm leading-7 text-thukha-indigo/80 dark:text-white/80">{a}</p>
-            </div>
-          ))}
+          {faqs.map(([q, a], i) => {
+            const open = openFaq === i;
+            return (
+              <div
+                key={q}
+                className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
+                  open
+                    ? "border-thukha-violet/50 bg-thukha-violet/5 shadow-md dark:border-thukha-lilac/40 dark:bg-white/10"
+                    : "border-thukha-lilac/25 bg-white/50 hover:border-thukha-violet/40 dark:border-white/5 dark:bg-white/5 dark:hover:border-thukha-lilac/30"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(open ? null : i)}
+                  aria-expanded={open}
+                  className="flex w-full items-start gap-3 p-4 text-left"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-thukha-violet to-thukha-teal text-xs font-black text-white shadow">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 font-bold leading-6 text-thukha-indigo dark:text-white">{q}</span>
+                  <span
+                    className={`shrink-0 text-lg font-black leading-6 text-thukha-violet transition-transform duration-300 dark:text-thukha-lilac ${
+                      open ? "rotate-180" : ""
+                    }`}
+                  >
+                    ⌄
+                  </span>
+                </button>
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-4 pb-4 pl-14 text-sm leading-7 text-thukha-indigo/80 dark:text-white/80">{a}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
