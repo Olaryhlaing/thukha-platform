@@ -19,7 +19,7 @@ export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-thukha-lilac/25 bg-white/85 backdrop-blur-md dark:border-white/10 dark:bg-thukha-indigo/85">
+    <header className="sticky top-0 z-50 border-b border-thukha-lilac/25 bg-[#EDE9FE] dark:border-white/10 dark:bg-[#1A1740]">
       {/* Animated colorful gradient line at the bottom of header */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-thukha-violet via-[#ec4899] via-thukha-teal to-thukha-lilac bg-[length:200%_auto] animate-[thu-gradient-flow_7s_linear_infinite]" />
 
@@ -46,7 +46,7 @@ export default function SiteHeader() {
           <nav
             onClick={() => setMenuOpen(false)}
             className={`order-3 w-full flex-col gap-1.5 px-3 pb-3 text-sm font-semibold transition-all duration-300 sm:gap-2 lg:order-2 lg:flex lg:w-auto lg:flex-1 lg:flex-row lg:items-center lg:justify-center lg:gap-3 lg:px-0 lg:pb-0 ${
-              menuOpen ? "flex anim-fade-in bg-white/95 dark:bg-thukha-indigo/95 rounded-2xl p-4 shadow-xl border border-thukha-lilac/30 lg:shadow-none lg:border-none lg:p-0" : "hidden"
+              menuOpen ? "flex anim-fade-in bg-[#EDE9FE] dark:bg-[#1A1740] rounded-2xl p-4 shadow-xl border border-thukha-lilac/30 lg:shadow-none lg:border-none lg:p-0" : "hidden"
             }`}
           >
             <Link
