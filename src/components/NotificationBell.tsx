@@ -25,6 +25,9 @@ export default function NotificationBell() {
   const [items, setItems] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  // Dropdown shows only the latest 4 at first; "Show more" reveals
+  // 4 older ones at a time, "Show less" collapses back to 4.
+  const [visibleCount, setVisibleCount] = useState(4);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -109,7 +112,10 @@ export default function NotificationBell() {
         type="button"
         onClick={() => {
           setOpen((v) => !v);
-          if (!open) load();
+          if (!open) {
+            setVisibleCount(4);
+            load();
+          }
         }}
         aria-label={t("notif.title")}
         aria-expanded={open}
@@ -140,7 +146,7 @@ export default function NotificationBell() {
             <p className="px-1 py-3 text-sm text-thukha-indigo/70 dark:text-white/70">{t("notif.empty")}</p>
           ) : (
             <ul className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
-              {items.slice(0, 20).map((n) => (
+              {items.slice(0, visibleCount).map((n) => (
                 <li key={n.id}>
                   <button
                     type="button"
@@ -160,6 +166,17 @@ export default function NotificationBell() {
                 </li>
               ))}
             </ul>
+          )}
+          {items.length > 4 && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((v) => (v >= items.length ? 4 : v + 4))}
+              className="mt-2 w-full rounded-xl bg-thukha-violet/10 px-3 py-2 text-xs font-bold text-thukha-violet transition-colors hover:bg-thukha-violet/20 dark:bg-white/10 dark:text-thukha-lilac dark:hover:bg-white/15"
+            >
+              {visibleCount >= items.length
+                ? t("notif.showLess")
+                : t("notif.showMore", { count: String(Math.min(4, items.length - visibleCount)) })}
+            </button>
           )}
         </div>
       )}
