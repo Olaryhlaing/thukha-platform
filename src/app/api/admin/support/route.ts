@@ -52,6 +52,18 @@ export async function PATCH(request: Request) {
   };
   const id = (body.id ?? "").trim();
   if (!id) return NextResponse.json({ error: "Ticket id မရှိပါ။" }, { status: 400 });
+  // A resolved ticket is closed for good — the admin cannot reply
+  // to it again (and cannot reopen it from here). This is checked
+  // server-side too, so a stale admin page cannot override it.
+  const { data: existing } = await service
+    .from("support_tickets")
+    .select("id, status")
+    .eq("id", id)
+    .single();
+  if (!existing) return NextResponse.json({ error: "Ticket ကို မတွေ့ပါ။" }, { status: 404 });
+  if (existing.status === "resolved") {
+    return NextResponse.json({ error: "ဒီ Ticket ကို ဖြေရှင်းပြီးပြီ — ထပ်ဖြေလို့ မရပါ။" }, { status: 400 });
+  }
   const update: { admin_reply?: string; status?: string; updated_at?: string } = {};
   let replied = false;
   if (body.admin_reply !== undefined) {
@@ -81,9 +93,9 @@ export async function PATCH(request: Request) {
   if (replied) await logAudit(service, user.id, "support_reply", id, data.subject);
   if (update.status) await logAudit(service, user.id, "support_status", id, `${data.subject} → ${update.status}`);
   if (update.status === "resolved") {
-    await notifyUser(service, data.owner_id, "support_resolved", data.subject, "/support");
+    await notifyUser(service, data.owner_id, "support_resolved", data.subject, "/support#tickets");
   } else if (replied) {
-    await notifyUser(service, data.owner_id, "support_reply", data.subject, "/support");
+    await notifyUser(service, data.owner_id, "support_reply", data.subject, "/support#tickets");
   }
   return NextResponse.json({ ok: true, status: data.status });
 }

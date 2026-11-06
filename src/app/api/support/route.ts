@@ -57,6 +57,6 @@ export async function POST(request: Request) {
     .select("id")
     .single();
   if (error || !data) return NextResponse.json({ error: "Ticket ပို့၍ မရပါ။" }, { status: 502 });
-  await notifyAdmins(service, "support_new", subject, "/admin");
+  await notifyAdmins(service, "support_new", subject, "/admin#support");
   return NextResponse.json({ id: data.id });
 }

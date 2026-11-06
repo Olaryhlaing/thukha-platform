@@ -216,7 +216,7 @@ export default function SupportPage() {
 
       {/* My tickets (customers only — admins answer tickets on /admin) */}
       {loggedIn && !isAdmin && (
-        <section className="mt-6 flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <section id="tickets" className="mt-6 flex scroll-mt-24 flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
           <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.myTickets")}</h2>
           {tickets.length === 0 ? (
             <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("support.empty")}</p>

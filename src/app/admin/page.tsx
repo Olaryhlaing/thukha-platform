@@ -560,7 +560,7 @@ export default function AdminPage() {
       </section>
 
       {/* Support Tickets (Customer Service) */}
-      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+      <section id="support" className="flex scroll-mt-24 flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
         <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.adminTitle")}</h2>
         {ticketMessage && <p className="text-sm font-semibold">{ticketMessage}</p>}
         {tickets.length === 0 ? (
@@ -585,6 +585,11 @@ export default function AdminPage() {
                     <b>{t("support.adminReply")}:</b> {tk.admin_reply}
                   </p>
                 )}
+                {tk.status === "resolved" && (
+                  <p className="mt-2 rounded-xl bg-teal-50 p-3 text-sm font-bold text-teal-800 dark:bg-teal-950/60 dark:text-teal-200">
+                    ✓ {t("support.adminResolvedLocked")}
+                  </p>
+                )}
                 <label className="mt-3 flex flex-col gap-1 text-sm font-bold">
                   {t("support.adminReplyLabel")}
                   <textarea
@@ -593,14 +598,15 @@ export default function AdminPage() {
                     placeholder={t("support.adminReplyPlaceholder")}
                     rows={2}
                     maxLength={2000}
-                    className="rounded-xl border border-thukha-lilac/40 bg-white px-3 py-2 text-sm outline-none dark:bg-thukha-indigo"
+                    disabled={tk.status === "resolved"}
+                    className="rounded-xl border border-thukha-lilac/40 bg-white px-3 py-2 text-sm outline-none disabled:opacity-60 dark:bg-thukha-indigo"
                   />
                 </label>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => replyTicket(tk.id, "in_progress")} className="colorful-btn-gradient shimmer-hover min-h-[38px] rounded-xl px-4 py-1.5 text-xs font-bold text-white shadow-md sm:text-sm">
+                  <button type="button" onClick={() => replyTicket(tk.id, "in_progress")} disabled={tk.status === "resolved"} className="colorful-btn-gradient shimmer-hover min-h-[38px] rounded-xl px-4 py-1.5 text-xs font-bold text-white shadow-md disabled:opacity-50 sm:text-sm">
                     {t("support.adminSave")}
                   </button>
-                  <button type="button" onClick={() => replyTicket(tk.id, "resolved")} className="inline-flex min-h-[38px] items-center rounded-xl bg-teal-50 px-4 py-1.5 text-xs font-bold text-teal-800 dark:bg-teal-950/60 dark:text-teal-200">
+                  <button type="button" onClick={() => replyTicket(tk.id, "resolved")} disabled={tk.status === "resolved"} className="inline-flex min-h-[38px] items-center rounded-xl bg-teal-50 px-4 py-1.5 text-xs font-bold text-teal-800 disabled:opacity-50 dark:bg-teal-950/60 dark:text-teal-200">
                     ✓ {t("support.adminMarkResolved")}
                   </button>
                 </div>
