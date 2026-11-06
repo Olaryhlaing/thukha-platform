@@ -78,6 +78,41 @@ export function SupportNavLink() {
   );
 }
 
+/* Support Inbox tab, rendered in the CENTER nav (SiteHeader).
+   Admin-only, like AdminNavLink — it opens /admin/support, the
+   dedicated inbox page. It is a header tab, NOT a button inside
+   the dashboard. */
+export function AdminSupportNavLink() {
+  const { t } = useLanguage();
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    supabase.auth.getSession().then(async ({ data }) => {
+      const token = data.session?.access_token;
+      if (!token) return;
+      try {
+        const res = await fetch("/api/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json()) as { role?: string };
+        if (res.ok && json.role === "admin") setIsAdmin(true);
+      } catch {
+        // Not admin, or not logged in — render nothing.
+      }
+    });
+  }, []);
+  if (!isAdmin) return null;
+  return (
+    <Link
+      href="/admin/support"
+      className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:text-thukha-violet hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+    >
+      {t("nav.supportInbox")}
+    </Link>
+  );
+}
+
 export default function AuthNav() {
   const router = useRouter();
   const { t } = useLanguage();

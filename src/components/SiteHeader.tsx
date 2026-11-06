@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import AuthNav, { AdminNavLink, SupportNavLink } from "@/components/AuthNav";
+import AuthNav, { AdminNavLink, AdminSupportNavLink, SupportNavLink } from "@/components/AuthNav";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -63,6 +63,7 @@ export default function SiteHeader() {
             </Link>
             <SupportNavLink />
             <AdminNavLink />
+            <AdminSupportNavLink />
             <div className="lg:hidden">
               <AuthNav />
             </div>

@@ -320,14 +320,6 @@ export default function AdminPage() {
         <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
           <span className="colorful-text-gradient">{t("admin.title")}</span>
         </h1>
-        {/* Customer tickets moved to their own inbox page on 2026-11-06 —
-            the dashboard keeps stats/users/health only. */}
-        <Link
-          href="/admin/support"
-          className="colorful-btn-gradient shimmer-hover flex min-h-[44px] w-fit items-center justify-center rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md"
-        >
-          💬 {t("support.adminTitle")} →
-        </Link>
       </div>
 
       {/* 4 Stat Cards */}
