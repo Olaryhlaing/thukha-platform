@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import AuthNav, { AdminNavLink } from "@/components/AuthNav";
+import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -74,6 +75,7 @@ export default function SiteHeader() {
         )}
 
         <div className="order-2 flex shrink-0 items-center gap-1.5 sm:gap-2 lg:order-3">
+          <NotificationBell />
           <LanguageToggle />
           <ThemeToggle />
           {/* Desktop only: logged-in pill (and guest links) sit here,

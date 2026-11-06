@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { notifyCustomers } from "@/lib/notify";
 
 async function admin(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
   const { data, error } = await a.service.from("announcements").insert({ title, body: bodyText, active: true, created_by: a.user.id }).select("id").single();
   if (error || !data) return NextResponse.json({ error: "Announcement သိမ်း၍ မရပါ။" }, { status: 502 });
   await logAudit(a.service, a.user.id, "announcement_create", data.id, title);
+  await notifyCustomers(a.service, "announcement", title, "/create");
   return NextResponse.json({ ok: true, id: data.id });
 }
 

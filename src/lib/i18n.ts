@@ -482,6 +482,26 @@ const my: Dict = {
   "support.adminFailed": "သိမ်း၍ မရပါ။ ထပ်ကြိုးစားပါ။",
   "support.adminNotice": "အက်ဒမင် အကောင့်နဲ့ ဝင်ထားတယ် — ဒီမှာ Ticket တင်စရာ မလိုဘူး။ Customer တွေတင်တဲ့ Ticket တွေကို /admin မှာ ကြည့်ပြီး အဖြေပေးပါ။",
   "support.adminGoToInbox": "အက်ဒမင် ဝင်စာပုံးကို သွားပါ",
+  // Notifications (header bell)
+  "notif.title": "အကြောင်းကြားစာများ",
+  "notif.empty": "အကြောင်းကြားစာ မရှိသေးဘူး။",
+  "notif.markAllRead": "အားလုံး ဖတ်ပြီးလို့ မှတ်ပါ",
+  "notif.support_replyTitle": "အက်ဒမင်က Ticket ကို အဖြေပေးပြီ",
+  "notif.support_replyBody": "{detail}",
+  "notif.support_resolvedTitle": "Ticket ဖြေရှင်းပြီးပြီ",
+  "notif.support_resolvedBody": "{detail}",
+  "notif.token_refillTitle": "Token ဖြည့်ပေးပြီ",
+  "notif.token_refillBody": "အက်ဒမင်က Token {detail} ဖြည့်ပေးပြီ။",
+  "notif.account_suspendedTitle": "အကောင့် ခဏ ပိတ်ထားတယ်",
+  "notif.account_suspendedBody": "သင့် အကောင့်ကို ခဏ ပိတ်ထားတယ်။ အက်ဒမင်ကို ဆက်သွယ်ပါ။",
+  "notif.account_unsuspendedTitle": "အကောင့် ပြန်ဖွင့်ပေးပြီ",
+  "notif.account_unsuspendedBody": "သင့် အကောင့်ကို ပြန်ဖွင့်ပေးပြီ။ ပုံထုတ်လို့ရပြီ။",
+  "notif.announcementTitle": "ကြေညာချက် အသစ်",
+  "notif.announcementBody": "{detail}",
+  "notif.support_newTitle": "Ticket အသစ်",
+  "notif.support_newBody": "{detail}",
+  "notif.user_newTitle": "အသုံးပြုသူ အသစ်",
+  "notif.user_newBody": "{detail} အကောင့်ဖွင့်ပြီ။",
 };
 
 const en: Dict = {
@@ -953,6 +973,26 @@ const en: Dict = {
   "support.adminFailed": "Could not save. Please try again.",
   "support.adminNotice": "You are logged in as an admin — no need to open a ticket here. View customer tickets and reply to them on /admin.",
   "support.adminGoToInbox": "Go to Admin Inbox",
+  // Notifications (header bell)
+  "notif.title": "Notifications",
+  "notif.empty": "No notifications yet.",
+  "notif.markAllRead": "Mark all as read",
+  "notif.support_replyTitle": "The admin replied to your ticket",
+  "notif.support_replyBody": "{detail}",
+  "notif.support_resolvedTitle": "Your ticket was resolved",
+  "notif.support_resolvedBody": "{detail}",
+  "notif.token_refillTitle": "Tokens refilled",
+  "notif.token_refillBody": "The admin refilled {detail} tokens for you.",
+  "notif.account_suspendedTitle": "Account temporarily suspended",
+  "notif.account_suspendedBody": "Your account is temporarily suspended. Please contact the admin.",
+  "notif.account_unsuspendedTitle": "Account reopened",
+  "notif.account_unsuspendedBody": "Your account is reopened. You can generate images again.",
+  "notif.announcementTitle": "New announcement",
+  "notif.announcementBody": "{detail}",
+  "notif.support_newTitle": "New ticket",
+  "notif.support_newBody": "{detail}",
+  "notif.user_newTitle": "New user",
+  "notif.user_newBody": "{detail} signed up.",
 };
 
 export const dict: Record<Lang, Dict> = { my, en };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 
 /* Admin suspend / unsuspend a customer. Cannot suspend yourself
    and cannot suspend another admin — an admin lockout would
@@ -26,5 +27,6 @@ export async function POST(request: Request) {
   const { error } = await service.from("profiles").update({ suspended }).eq("id", userId);
   if (error) return NextResponse.json({ error: "Suspend ပြောင်းလို့ မရပါ။" }, { status: 502 });
   await logAudit(service, user.id, suspended ? "suspend" : "unsuspend", userId, target.display_name ?? null);
+  await notifyUser(service, userId, suspended ? "account_suspended" : "account_unsuspended", target.display_name ?? null, "/account");
   return NextResponse.json({ ok: true, suspended });
 }

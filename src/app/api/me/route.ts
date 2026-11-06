@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
+import { notifyAdmins } from "@/lib/notify";
 
 /* Who am I: returns the logged-in user's email, role and server
    token balance. Used by the unified /login page to route admins
@@ -20,14 +21,17 @@ export async function GET(request: Request) {
     .select("id")
     .eq("id", user.id)
     .single();
+  const newName =
+    (user.user_metadata?.display_name as string | undefined) ??
+    user.email?.split("@")[0] ??
+    null;
   if (!existingProfile) {
     await service.from("profiles").insert({
       id: user.id,
-      display_name:
-        (user.user_metadata?.display_name as string | undefined) ??
-        user.email?.split("@")[0] ??
-        null,
+      display_name: newName,
     });
+    // First login = a new user: tell the admins (in-app bell only).
+    await notifyAdmins(service, "user_new", newName, "/admin");
   }
   const { data: profile } = await service
     .from("profiles")

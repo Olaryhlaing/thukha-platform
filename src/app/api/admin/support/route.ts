@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 
 /* Admin support inbox: every customer's ticket, newest first,
    with the owner's display name. PATCH answers a ticket: set
@@ -79,5 +80,10 @@ export async function PATCH(request: Request) {
   if (error || !data) return NextResponse.json({ error: "Ticket ပြင်၍ မရပါ။" }, { status: 502 });
   if (replied) await logAudit(service, user.id, "support_reply", id, data.subject);
   if (update.status) await logAudit(service, user.id, "support_status", id, `${data.subject} → ${update.status}`);
+  if (update.status === "resolved") {
+    await notifyUser(service, data.owner_id, "support_resolved", data.subject, "/support");
+  } else if (replied) {
+    await notifyUser(service, data.owner_id, "support_reply", data.subject, "/support");
+  }
   return NextResponse.json({ ok: true, status: data.status });
 }

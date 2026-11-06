@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase, getUserFromToken } from "@/lib/supabase/server";
+import { notifyAdmins } from "@/lib/notify";
 
 /* Customer support tickets (own only).
    GET: my tickets, newest first, with the admin reply when present.
@@ -56,5 +57,6 @@ export async function POST(request: Request) {
     .select("id")
     .single();
   if (error || !data) return NextResponse.json({ error: "Ticket ပို့၍ မရပါ။" }, { status: 502 });
+  await notifyAdmins(service, "support_new", subject, "/admin");
   return NextResponse.json({ id: data.id });
 }
