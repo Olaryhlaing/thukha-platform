@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Admin — အကူအညီ Link ဖြုတ်ခြင်း (2026-11-06)
 
-## Getting Started
+Admin တွေအတွက် အကူအညီ (/support) ကို ဖြုတ်လိုက်ပြီ။ Lint 0 errors,
+Build success (local commits `751eb0d` + `7512255`)။ Database ပြင်စရာ မရှိဘူး။
 
-First, run the development server:
+## ဘာတွေ ပြောင်းလဲ?
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Header:** Admin Account နဲ့ ဝင်ထားရင် အလယ်က Nav မှာ "အကူအညီ" Link
+  မပေါ်တော့ဘူး။ Customer နဲ့ Guest တွေဆီမှာ အရင်အတိုင်း ပေါ်နေမယ်
+  (Customer က Ticket တင်တာ၊ Guest က FAQ ဖတ်တာ အတွက်)။
+- **/support တိုက်ရိုက် ဝင်ရင်:** Admin က /support ကို တိုက်ရိုက် ရိုက်ဝင်ရင်
+  /admin ကို တန်း ပြန်ပို့မယ် — အဲဒီမှာ Ticket တွေကို ဖြေရမှာ ဖြစ်လို့။
+- **Customer ဘက် မပြောင်းလဲဘူး:** /support, Ticket တင်တာ, ကိုယ့် Ticket
+  စာရင်းနဲ့ Admin အဖြေ ကြည့်တာတွေ အရင်အတိုင်း အလုပ်လုပ်တယ်။
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Copy-in အဆင့်
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Pack ထဲက ဖိုင် ၃ ခု ကို `D:\thukha-platform-fresh` ထဲ လမ်းကြောင်းအတိုင်း
+ကူးထည့်ပါ (ဖိုင်အဟောင်းကို အစားထိုးပါ) → Commit → Push → Vercel Ready →
+Hard Refresh (Ctrl+Shift+R)။
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## စမ်းနည်း
 
-## Learn More
+1. **Admin Account နဲ့ Login** → Header အလယ်မှာ "အကူအညီ" မရှိရဘူး —
+   Create, Designs, Admin ပဲ ရှိရမယ်။
+2. Address Bar မှာ `thukha-platform-tagc.vercel.app/support` ရိုက်ဝင် →
+   /admin ကို တန်း ပြန်ရောက်ရမယ်။
+3. **Customer Account နဲ့ Login** → Header မှာ "အကူအညီ" ပေါ်နေရမယ် →
+   နှိပ်ရင် /support ပွင့်ပြီး Ticket တင်လို့ ရရမယ်။
 
-To learn more about Next.js, take a look at the following resources:
+## ဖိုင်စာရင်း (၃ ဖိုင်)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/components/AuthNav.tsx` — `SupportNavLink` အသစ် (Admin ဆို Link မပြ၊ တခြားသူဆို ပြ)
+- `src/components/SiteHeader.tsx` — အလယ် Nav က /support Link အဟောင်းကို `SupportNavLink` နဲ့ အစားထိုး
+- `src/app/support/page.tsx` — Admin ဆို /admin ကို တန်း ပြန်ပို့ (redirect)

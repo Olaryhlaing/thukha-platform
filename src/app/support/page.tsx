@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 import { serverErrorText } from "@/lib/i18n";
@@ -20,6 +21,7 @@ const CATEGORIES = ["token", "image", "download", "account", "payment", "other"]
 
 export default function SupportPage() {
   const { t, lang } = useLanguage();
+  const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loggedIn, setLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -52,7 +54,16 @@ export default function SupportPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const mjson = (await mres.json()) as { role?: string };
-      if (mres.ok) setIsAdmin(mjson.role === "admin");
+      if (mres.ok) {
+        const admin = mjson.role === "admin";
+        setIsAdmin(admin);
+        if (admin) {
+          // Admins do not use this page — they answer tickets on
+          // /admin. Send them straight there.
+          router.replace("/admin");
+          return;
+        }
+      }
     } catch {
       // Role check is extra — a failed check just keeps the customer view.
     }
@@ -68,8 +79,9 @@ export default function SupportPage() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function statusLabel(status: Ticket["status"]) {
