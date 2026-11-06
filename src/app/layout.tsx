@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Myanmar, Padauk, Noto_Serif_Myanmar, Playfair_Display } from "next/font/google";
-import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import PwaRegister from "@/components/PwaRegister";
 import LanguageProvider from "@/components/LanguageProvider";
 import AmbientBackground from "@/components/AmbientBackground";
@@ -69,23 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LanguageProvider>
           <SiteHeader />
           <div className="relative z-10 flex flex-1 flex-col pb-24">{children}</div>
-          {/* Fixed footer: glassmorphic with colorful animated gradient accent border */}
-          <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-thukha-lilac/30 bg-white/90 py-4.5 text-center text-sm text-thukha-indigo/70 backdrop-blur-md dark:border-white/10 dark:bg-thukha-indigo/90 dark:text-white/70">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-thukha-violet via-pink-500 via-thukha-teal to-thukha-lilac bg-[length:200%_auto] animate-[thu-gradient-flow_6s_ease_infinite]" />
-            <div className="mx-auto flex flex-wrap items-center justify-center gap-2 px-4 sm:gap-3">
-              <span className="inline-flex items-center gap-1.5 font-medium">
-                <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
-                <span>ThuKha Platform</span>
-              </span>
-              <span className="text-thukha-lilac/60">·</span>
-              <Link
-                href="/privacy"
-                className="font-semibold text-thukha-violet transition-all duration-200 hover:text-thukha-blue hover:underline dark:text-thukha-lilac dark:hover:text-thukha-teal"
-              >
-                Privacy — ကိုယ်ရေးအချက်အလက် မူဝါဒ
-              </Link>
-            </div>
-          </footer>
+          <SiteFooter />
         </LanguageProvider>
       </body>
     </html>

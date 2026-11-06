@@ -90,7 +90,7 @@ export default function SiteHeader() {
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
               aria-expanded={menuOpen}
               className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border border-thukha-lilac/50 bg-white/50 text-xl font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-105 active:scale-95 lg:hidden dark:bg-white/5 dark:text-thukha-lilac dark:hover:bg-white/10"
             >

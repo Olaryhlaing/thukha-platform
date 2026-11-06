@@ -20,7 +20,7 @@ export default function PrivacyPage() {
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-thukha-violet/30 bg-thukha-violet/10 px-3.5 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:bg-white/10 dark:text-thukha-lilac">
             <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
-            Legal & Security
+            {t("privacy.badge")}
           </span>
         </div>
         <h1 className="text-3xl font-black tracking-tight sm:text-4xl">

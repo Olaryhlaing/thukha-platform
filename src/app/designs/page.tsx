@@ -22,7 +22,7 @@ function readGuestDesigns(): Design[] {
 }
 
 export default function DesignsPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [designs, setDesigns] = useState<Design[]>(() => {
     if (typeof window === "undefined" || getSupabase()) return [];
     return readGuestDesigns();
@@ -130,7 +130,7 @@ export default function DesignsPage() {
                   )}
                   {d.created_at && (
                     <span className="text-xs text-thukha-indigo/50 dark:text-white/50">
-                      • {new Date(d.created_at).toLocaleDateString()}
+                      • {new Date(d.created_at).toLocaleDateString(lang === "my" ? "my-MM" : "en-GB")}
                     </span>
                   )}
                 </div>
@@ -173,7 +173,7 @@ export default function DesignsPage() {
                   <li key={g.id} className="flex flex-col gap-2 rounded-2xl border border-thukha-lilac/30 bg-white/75 p-4 dark:border-white/10 dark:bg-thukha-indigo/70">
                     <p className="text-sm leading-6">&ldquo;{g.prompt}&rdquo;</p>
                     <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
-                      {g.created_at ? new Date(g.created_at).toLocaleString() : ""} • {g.format ?? ""} • {t("designs.historySpent")}: {g.cost_tokens}
+                      {g.created_at ? new Date(g.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB") : ""} • {g.format ?? ""} • {t("designs.historySpent")}: {g.cost_tokens}
                     </p>
                     <Link
                       href={`/create?prompt=${encodeURIComponent(g.prompt)}&channel=${encodeURIComponent(channelFor)}`}

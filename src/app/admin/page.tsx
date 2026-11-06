@@ -297,7 +297,7 @@ export default function AdminPage() {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-6 py-12">
         <div className="rounded-3xl border border-rose-300/60 bg-rose-500/10 p-8 text-center backdrop-blur-xl">
-          <h1 className="text-3xl font-black">Admin Panel</h1>
+          <h1 className="text-3xl font-black">{t("admin.title")}</h1>
           <p className="mt-3 text-base font-medium text-rose-800 dark:text-rose-200">{error}</p>
           <Link
             href="/login"
@@ -345,7 +345,7 @@ export default function AdminPage() {
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-600 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-300">
             <span className="pulsing-dot h-2 w-2 rounded-full bg-amber-500" />
-            Admin Operations Center
+            {t("admin.opsCenter")}
           </span>
         </div>
         <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
@@ -533,7 +533,7 @@ export default function AdminPage() {
                     {t("admin.generatedBy")} {nameOf(g.owner_id)}
                   </p>
                   <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
-                    {g.model} • {g.format ?? "standard"} • {g.cost_tokens} token • {new Date(g.created_at).toLocaleDateString()}
+                    {g.model} • {g.format ?? "standard"} • {g.cost_tokens} token • {new Date(g.created_at).toLocaleDateString(lang === "my" ? "my-MM" : "en-GB")}
                   </p>
                 </div>
                 {g.flagged && (
@@ -577,7 +577,7 @@ export default function AdminPage() {
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-thukha-indigo/70 dark:bg-black/20 dark:text-white/70">{tk.category}</span>
                 </div>
                 <p className="mt-1 text-xs font-bold text-thukha-violet dark:text-thukha-lilac">
-                  {tk.owner_name ?? tk.owner_id.slice(0, 8)} • {new Date(tk.created_at).toLocaleString()}
+                  {tk.owner_name ?? tk.owner_id.slice(0, 8)} • {new Date(tk.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB")}
                 </p>
                 <p className="mt-1 text-sm leading-6 text-thukha-indigo/80 dark:text-white/80">{tk.message}</p>
                 {tk.admin_reply && (
@@ -624,7 +624,7 @@ export default function AdminPage() {
                 <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
                   {l.actor_name ?? l.actor_id ?? "—"} → {l.target_name ?? l.target_id ?? "—"}
                   {l.detail ? ` • ${l.detail}` : ""}
-                  {l.created_at ? ` • ${new Date(l.created_at).toLocaleString()}` : ""}
+                  {l.created_at ? ` • ${new Date(l.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB")}` : ""}
                 </p>
               </li>
             ))}

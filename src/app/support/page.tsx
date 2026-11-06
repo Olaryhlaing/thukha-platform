@@ -119,7 +119,7 @@ export default function SupportPage() {
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-thukha-violet/30 bg-thukha-violet/10 px-3.5 py-1 text-xs font-bold text-thukha-violet dark:border-thukha-lilac/40 dark:bg-white/10 dark:text-thukha-lilac">
             <span className="pulsing-dot h-2 w-2 rounded-full bg-emerald-400" />
-            💬 Customer Service
+            {t("support.badge")}
           </span>
         </div>
         <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
@@ -232,7 +232,7 @@ export default function SupportPage() {
                   </div>
                   <p className="mt-1 text-sm leading-6 text-thukha-indigo/80 dark:text-white/80">{tk.message}</p>
                   <p className="mt-1 text-xs text-thukha-indigo/60 dark:text-white/60">
-                    {new Date(tk.created_at).toLocaleString()}
+                    {new Date(tk.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB")}
                   </p>
                   <div className="mt-3 rounded-xl bg-thukha-violet/5 p-3 dark:bg-white/5">
                     <p className="text-xs font-bold text-thukha-violet dark:text-thukha-lilac">{t("support.adminReply")}</p>

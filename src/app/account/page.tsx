@@ -7,7 +7,7 @@ import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 
 export default function AccountPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState("");
@@ -475,7 +475,7 @@ export default function AccountPage() {
                     {ev.type === "refill" ? t("account.tokenHistoryRefill") : t("account.tokenHistorySpent")}
                     {ev.prompt ? <span className="font-normal text-thukha-indigo/70 dark:text-white/70"> — {ev.prompt.slice(0, 60)}</span> : null}
                   </p>
-                  {ev.created_at && <p className="text-xs text-thukha-indigo/60 dark:text-white/60">{new Date(ev.created_at).toLocaleString()}</p>}
+                  {ev.created_at && <p className="text-xs text-thukha-indigo/60 dark:text-white/60">{new Date(ev.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB")}</p>}
                 </div>
                 <span className={`shrink-0 font-black ${ev.amount >= 0 ? "text-teal-600 dark:text-teal-300" : "text-rose-600 dark:text-rose-300"}`}>
                   {ev.amount >= 0 ? `+${ev.amount}` : ev.amount}

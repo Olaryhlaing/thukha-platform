@@ -190,7 +190,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 type="text"
-                placeholder="Business or Owner Name"
+                placeholder="ဥပမာ — အောင်မြင့်"
                 className={`${inputClass} mt-1`}
               />
             </label>
