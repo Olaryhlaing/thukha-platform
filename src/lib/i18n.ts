@@ -483,6 +483,8 @@ const my: Dict = {
   "support.adminNotice": "အက်ဒမင် အကောင့်နဲ့ ဝင်ထားတယ် — ဒီမှာ Ticket တင်စရာ မလိုဘူး။ Customer တွေတင်တဲ့ Ticket တွေကို /admin မှာ ကြည့်ပြီး အဖြေပေးပါ။",
   "support.adminGoToInbox": "အက်ဒမင် ဝင်စာပုံးကို သွားပါ",
   "support.adminResolvedLocked": "ဖြေရှင်းပြီးပြီ — ထပ်ဖြေလို့ မရတော့ပါ။",
+  "support.backToAdmin": "Admin Dashboard ကို ပြန်သွားပါ",
+  "support.adminOpenCount": "မဖြေရသေး Ticket {count} ခု",
   // Notifications (header bell)
   "notif.title": "အကြောင်းကြားစာများ",
   "notif.empty": "အကြောင်းကြားစာ မရှိသေးဘူး။",
@@ -975,6 +977,8 @@ const en: Dict = {
   "support.adminNotice": "You are logged in as an admin — no need to open a ticket here. View customer tickets and reply to them on /admin.",
   "support.adminGoToInbox": "Go to Admin Inbox",
   "support.adminResolvedLocked": "Resolved — cannot reply again.",
+  "support.backToAdmin": "Back to Admin Dashboard",
+  "support.adminOpenCount": "{count} tickets waiting for a reply",
   // Notifications (header bell)
   "notif.title": "Notifications",
   "notif.empty": "No notifications yet.",

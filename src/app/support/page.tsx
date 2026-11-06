@@ -59,8 +59,8 @@ export default function SupportPage() {
         setIsAdmin(admin);
         if (admin) {
           // Admins do not use this page — they answer tickets on
-          // /admin. Send them straight there.
-          router.replace("/admin");
+          // /admin/support. Send them straight there.
+          router.replace("/admin/support");
           return;
         }
       }
@@ -169,7 +169,7 @@ export default function SupportPage() {
           <div className="flex flex-col gap-3">
             <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("support.adminNotice")}</p>
             <Link
-              href="/admin"
+              href="/admin/support"
               className="colorful-btn-gradient shimmer-hover inline-flex min-h-[44px] w-fit items-center justify-center rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md"
             >
               {t("support.adminGoToInbox")} →
