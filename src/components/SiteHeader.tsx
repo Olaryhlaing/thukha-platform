@@ -60,6 +60,12 @@ export default function SiteHeader() {
             >
               {t("nav.designs")}
             </Link>
+            <Link
+              href="/support"
+              className="flex min-h-[40px] items-center rounded-xl px-3 py-1.5 text-thukha-violet transition-all duration-200 hover:bg-thukha-violet/10 hover:text-thukha-violet hover:scale-105 active:scale-95 dark:text-thukha-lilac dark:hover:bg-white/10"
+            >
+              {t("nav.support")}
+            </Link>
             <AdminNavLink />
             <div className="lg:hidden">
               <AuthNav />

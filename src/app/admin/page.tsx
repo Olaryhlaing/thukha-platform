@@ -34,6 +34,10 @@ export default function AdminPage() {
   const [annBody, setAnnBody] = useState("");
   const [annMessage, setAnnMessage] = useState("");
   const [adminActionMessage, setAdminActionMessage] = useState("");
+  type Ticket = { id: string; owner_id: string; owner_name: string | null; category: string; subject: string; message: string; status: "open" | "in_progress" | "resolved"; admin_reply: string | null; created_at: string };
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketReplies, setTicketReplies] = useState<Record<string, string>>({});
+  const [ticketMessage, setTicketMessage] = useState("");
 
   async function loadStats() {
     const supabase = getSupabase();
@@ -73,6 +77,11 @@ export default function AdminPage() {
       });
       const njson = (await nres.json()) as { announcements?: Ann[] };
       if (nres.ok) setAnnouncements(njson.announcements ?? []);
+      const sres = await fetch("/api/admin/support", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const sjson = (await sres.json()) as { tickets?: Ticket[] };
+      if (sres.ok) setTickets(sjson.tickets ?? []);
     } catch {
       // Audit/announcements are extra info — stats still work.
     }
@@ -191,6 +200,28 @@ export default function AdminPage() {
       setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, active } : a)));
     } catch {
       setAnnMessage(t("admin.annFailed"));
+    }
+  }
+
+  async function replyTicket(id: string, status: "in_progress" | "resolved") {
+    const reply = (ticketReplies[id] ?? "").trim();
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/support", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, admin_reply: reply, status }),
+      });
+      if (!res.ok) {
+        setTicketMessage(t("support.adminFailed"));
+        return;
+      }
+      setTicketMessage(t("support.adminSaved"));
+      setTickets((prev) => prev.map((tk) => (tk.id === id ? { ...tk, admin_reply: reply, status } : tk)));
+    } catch {
+      setTicketMessage(t("support.adminFailed"));
     }
   }
 
@@ -522,6 +553,57 @@ export default function AdminPage() {
                 >
                   🗑️ {t("common.delete")}
                 </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Support Tickets (Customer Service) */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("support.adminTitle")}</h2>
+        {ticketMessage && <p className="text-sm font-semibold">{ticketMessage}</p>}
+        {tickets.length === 0 ? (
+          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("support.adminEmpty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {tickets.map((tk) => (
+              <li key={tk.id} className="rounded-2xl border border-thukha-lilac/25 bg-white/50 p-4 dark:border-white/5 dark:bg-white/5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-bold text-thukha-indigo dark:text-white">{tk.subject}</p>
+                  <span className="rounded-full bg-thukha-violet/10 px-3 py-1 text-xs font-bold text-thukha-violet dark:text-thukha-lilac">
+                    {tk.status === "in_progress" ? t("support.statusInProgress") : tk.status === "resolved" ? t("support.statusResolved") : t("support.statusOpen")}
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-thukha-indigo/70 dark:bg-black/20 dark:text-white/70">{tk.category}</span>
+                </div>
+                <p className="mt-1 text-xs font-bold text-thukha-violet dark:text-thukha-lilac">
+                  {tk.owner_name ?? tk.owner_id.slice(0, 8)} • {new Date(tk.created_at).toLocaleString()}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-thukha-indigo/80 dark:text-white/80">{tk.message}</p>
+                {tk.admin_reply && (
+                  <p className="mt-2 rounded-xl bg-thukha-violet/5 p-3 text-sm leading-6 dark:bg-white/5">
+                    <b>{t("support.adminReply")}:</b> {tk.admin_reply}
+                  </p>
+                )}
+                <label className="mt-3 flex flex-col gap-1 text-sm font-bold">
+                  {t("support.adminReplyLabel")}
+                  <textarea
+                    value={ticketReplies[tk.id] ?? tk.admin_reply ?? ""}
+                    onChange={(e) => setTicketReplies((prev) => ({ ...prev, [tk.id]: e.target.value }))}
+                    placeholder={t("support.adminReplyPlaceholder")}
+                    rows={2}
+                    maxLength={2000}
+                    className="rounded-xl border border-thukha-lilac/40 bg-white px-3 py-2 text-sm outline-none dark:bg-thukha-indigo"
+                  />
+                </label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => replyTicket(tk.id, "in_progress")} className="colorful-btn-gradient shimmer-hover min-h-[38px] rounded-xl px-4 py-1.5 text-xs font-bold text-white shadow-md sm:text-sm">
+                    {t("support.adminSave")}
+                  </button>
+                  <button type="button" onClick={() => replyTicket(tk.id, "resolved")} className="inline-flex min-h-[38px] items-center rounded-xl bg-teal-50 px-4 py-1.5 text-xs font-bold text-teal-800 dark:bg-teal-950/60 dark:text-teal-200">
+                    ✓ {t("support.adminMarkResolved")}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
