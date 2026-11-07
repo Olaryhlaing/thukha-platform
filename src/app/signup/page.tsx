@@ -23,6 +23,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
   const [resending, setResending] = useState(false);
+  // True when the email turned out to be already registered.
+  const [alreadyExists, setAlreadyExists] = useState(false);
 
   if (!supabaseConfigured()) {
     return (
@@ -73,6 +75,7 @@ export default function SignupPage() {
     setError("");
     setRawError("");
     setMessage("");
+    setAlreadyExists(false);
     const supabase = getSupabase();
     const { data, error: err } = await supabase!.auth.signUp({
       email: email.trim(),
@@ -103,6 +106,18 @@ export default function SignupPage() {
       } else {
         setError(t("signup.errGeneric"));
       }
+      return;
+    }
+    // Supabase returns NO error for an already-registered email (so
+    // nobody can probe which emails exist) — it returns the existing
+    // user with an empty identities list and no session. The old
+    // code only checked err.message for "already"/"registered", so
+    // that branch never fired and the same email could "sign up"
+    // again and again, landing on the "check your email" screen
+    // every time. An empty identities list is the real signal.
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      setError(t("signup.errExists"));
+      setAlreadyExists(true);
       return;
     }
     if (!data.session) {
@@ -225,6 +240,14 @@ export default function SignupPage() {
             {error && (
               <p className="anim-scale-in rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-sm text-rose-900 shadow-sm dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
                 ⚠️ {error}
+                {alreadyExists && (
+                  <>
+                    {" "}
+                    <Link href="/login" className="font-bold text-thukha-violet underline transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                      {t("common.loginLink")} →
+                    </Link>
+                  </>
+                )}
               </p>
             )}
             {rawError && (
