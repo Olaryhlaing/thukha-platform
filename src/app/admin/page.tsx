@@ -26,8 +26,6 @@ export default function AdminPage() {
   type Health = { todayGenerations: number; todaySpent: number; totalGenerations: number; totalSpent: number; users: number; estimatedQuotaLeft: number; failuresToday?: number; failuresTotal?: number; failureRate?: number };
   const [health, setHealth] = useState<Health | null>(null);
   const [exportMessage, setExportMessage] = useState("");
-  type AuditLog = { id: string; actor_id: string | null; action: string; target_id: string | null; detail: string | null; created_at?: string; actor_name: string | null; target_name: string | null };
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   type Ann = { id: string; title: string; body: string; active: boolean; created_at?: string };
   const [announcements, setAnnouncements] = useState<Ann[]>([]);
   const [annTitle, setAnnTitle] = useState("");
@@ -66,11 +64,6 @@ export default function AdminPage() {
       // Health is extra info — stats still work without it.
     }
     try {
-      const ares = await fetch("/api/admin/audit", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const ajson = (await ares.json()) as { logs?: AuditLog[] };
-      if (ares.ok) setAuditLogs(ajson.logs ?? []);
       const nres = await fetch("/api/admin/announcements", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -80,7 +73,7 @@ export default function AdminPage() {
       const mjson = (await mres.json()) as { maintenance?: boolean };
       if (typeof mjson.maintenance === "boolean") setMaintenance(mjson.maintenance);
     } catch {
-      // Audit/announcements are extra info — stats still work.
+      // Announcements are extra info — stats still work.
     }
   }
 
@@ -413,6 +406,8 @@ export default function AdminPage() {
           </div>
         )}
 
+        {adminActionMessage && <p className="text-sm font-semibold">{adminActionMessage}</p>}
+
         {stats.users.length === 0 ? (
           <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("admin.noUsers")}</p>
         ) : (
@@ -550,28 +545,6 @@ export default function AdminPage() {
                 >
                   🗑️ {t("common.delete")}
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Audit Log (Batch 2) */}
-      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
-        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.auditTitle")}</h2>
-        {adminActionMessage && <p className="text-sm font-semibold">{adminActionMessage}</p>}
-        {auditLogs.length === 0 ? (
-          <p className="text-sm text-thukha-indigo/70 dark:text-white/70">{t("admin.auditEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {auditLogs.slice(0, 50).map((l) => (
-              <li key={l.id} className="rounded-xl bg-white/60 p-3 text-sm dark:bg-black/20">
-                <p className="font-bold">{l.action}</p>
-                <p className="text-xs text-thukha-indigo/60 dark:text-white/60">
-                  {l.actor_name ?? l.actor_id ?? "—"} → {l.target_name ?? l.target_id ?? "—"}
-                  {l.detail ? ` • ${l.detail}` : ""}
-                  {l.created_at ? ` • ${new Date(l.created_at).toLocaleString(lang === "my" ? "my-MM" : "en-GB")}` : ""}
-                </p>
               </li>
             ))}
           </ul>
