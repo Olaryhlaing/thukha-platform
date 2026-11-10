@@ -33,6 +33,9 @@ export default function AdminPage() {
   const [annTitle, setAnnTitle] = useState("");
   const [annBody, setAnnBody] = useState("");
   const [annMessage, setAnnMessage] = useState("");
+  // Maintenance mode (admin temporarily closes login for customers).
+  const [maintenance, setMaintenance] = useState<boolean | null>(null);
+  const [maintMessage, setMaintMessage] = useState("");
   const [adminActionMessage, setAdminActionMessage] = useState("");
 
   async function loadStats() {
@@ -73,6 +76,9 @@ export default function AdminPage() {
       });
       const njson = (await nres.json()) as { announcements?: Ann[] };
       if (nres.ok) setAnnouncements(njson.announcements ?? []);
+      const mres = await fetch("/api/maintenance");
+      const mjson = (await mres.json()) as { maintenance?: boolean };
+      if (typeof mjson.maintenance === "boolean") setMaintenance(mjson.maintenance);
     } catch {
       // Audit/announcements are extra info — stats still work.
     }
@@ -191,6 +197,28 @@ export default function AdminPage() {
       setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, active } : a)));
     } catch {
       setAnnMessage(t("admin.annFailed"));
+    }
+  }
+
+  async function toggleMaintenance(on: boolean) {
+    const supabase = getSupabase();
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ maintenance: on }),
+      });
+      const json = (await res.json()) as { maintenance?: boolean; error?: string };
+      if (!res.ok || typeof json.maintenance !== "boolean") {
+        setMaintMessage(serverErrorText(lang, json.error) ?? t("admin.maintFailed"));
+        return;
+      }
+      setMaintenance(json.maintenance);
+      setMaintMessage(t("admin.maintSaved"));
+    } catch {
+      setMaintMessage(t("admin.maintFailed"));
     }
   }
 
@@ -548,6 +576,22 @@ export default function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Maintenance (temporarily close login for customers) */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-thukha-lilac/30 bg-white/75 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-white/10 dark:bg-thukha-indigo/70">
+        <h2 className="text-xl font-black text-thukha-indigo dark:text-white">{t("admin.maintTitle")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">{t("admin.maintText")}</p>
+        {maintMessage && <p className="text-sm font-semibold">{maintMessage}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold ${maintenance ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" : "bg-teal-500/10 text-teal-700 dark:text-teal-300"}`}>
+            <span className={`pulsing-dot h-2 w-2 rounded-full ${maintenance ? "bg-amber-500" : "bg-teal-500"}`} />
+            {maintenance === null ? t("common.loading") : maintenance ? t("admin.maintOn") : t("admin.maintOff")}
+          </span>
+          <button type="button" onClick={() => toggleMaintenance(!(maintenance ?? false))} disabled={maintenance === null} className="colorful-btn-gradient shimmer-hover min-h-[44px] w-fit rounded-xl px-5 py-2 text-sm font-bold text-white shadow-md disabled:opacity-50">
+            {maintenance ? t("admin.maintDisable") : t("admin.maintEnable")}
+          </button>
+        </div>
       </section>
 
       {/* Announcements (Batch 2) */}

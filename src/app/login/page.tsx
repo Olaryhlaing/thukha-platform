@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
@@ -75,6 +75,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Maintenance mode (admin temporarily closes login): customers
+  // see the notice and cannot get in; admins still can. The role
+  // is only known after sign-in, so the enforcement happens below
+  // in login(), after /api/me returns the role.
+  const [maintenance, setMaintenance] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/maintenance")
+      .then((r) => r.json())
+      .then((j) => {
+        if (typeof j.maintenance === "boolean") setMaintenance(j.maintenance);
+      })
+      .catch(() => {
+        // If the flag cannot be read, login stays open — the
+        // post-login check below re-reads it before routing.
+      });
+  }, []);
 
   async function login() {
     if (!email.trim() || !password) {
@@ -106,7 +123,23 @@ export default function LoginPage() {
       headers: { Authorization: `Bearer ${data.session.access_token}` },
     });
     const json = (await res.json()) as { role?: string };
+    // Maintenance enforcement: re-read the flag fresh (the page
+    // may have been open since before the admin switched it on).
+    // Admins pass through; customers are signed straight back out.
+    let maintenanceOn = maintenance;
+    try {
+      const mres = await fetch("/api/maintenance");
+      const mjson = (await mres.json()) as { maintenance?: boolean };
+      if (typeof mjson.maintenance === "boolean") maintenanceOn = mjson.maintenance;
+    } catch {
+      // Keep the value from page load.
+    }
     setLoading(false);
+    if (maintenanceOn && json.role !== "admin") {
+      await supabase!.auth.signOut();
+      setError(t("maintenance.blocked"));
+      return;
+    }
     router.push(res.ok && json.role === "admin" ? "/admin" : "/create");
   }
 
@@ -138,6 +171,12 @@ export default function LoginPage() {
             </div>
           ) : (
             <>
+              {maintenance && (
+                <div className="anim-scale-in flex items-center gap-2 rounded-xl border border-amber-300/60 bg-amber-500/10 p-3.5 text-sm font-bold text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
+                  <span>🔧</span>
+                  <span>{t("maintenance.notice")}</span>
+                </div>
+              )}
               {error && (
                 <div className="anim-scale-in flex items-center gap-2 rounded-xl border border-rose-300/60 bg-rose-50/90 p-3.5 text-sm text-rose-900 shadow-sm dark:border-rose-800 dark:bg-rose-950/80 dark:text-rose-200">
                   <span>⚠️</span>

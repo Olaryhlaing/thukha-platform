@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
@@ -25,6 +25,21 @@ export default function SignupPage() {
   const [resending, setResending] = useState(false);
   // True when the email turned out to be already registered.
   const [alreadyExists, setAlreadyExists] = useState(false);
+  // Maintenance mode (admin temporarily closes login): new signups
+  // are always customers, so the form is blocked outright while
+  // it is on. Admins never sign up here — they are promoted by SQL.
+  const [maintenance, setMaintenance] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/maintenance")
+      .then((r) => r.json())
+      .then((j) => {
+        if (typeof j.maintenance === "boolean") setMaintenance(j.maintenance);
+      })
+      .catch(() => {
+        // If the flag cannot be read, signup stays open.
+      });
+  }, []);
 
   if (!supabaseConfigured()) {
     return (
@@ -44,6 +59,23 @@ export default function SignupPage() {
   }
 
   async function signup() {
+    // Re-check at submit time: the page may have been open since
+    // before the admin switched maintenance on.
+    try {
+      const mres = await fetch("/api/maintenance");
+      const mjson = (await mres.json()) as { maintenance?: boolean };
+      if (mjson.maintenance === true) {
+        setMaintenance(true);
+        setError(t("maintenance.signupBlocked"));
+        return;
+      }
+    } catch {
+      // Keep going — the page-load value is the fallback.
+    }
+    if (maintenance) {
+      setError(t("maintenance.signupBlocked"));
+      return;
+    }
     if (!name.trim()) {
       setError(t("signup.errName"));
       return;
@@ -192,6 +224,17 @@ export default function SignupPage() {
             </button>
             <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
               {t("signup.afterConfirm")}{" "}
+              <Link href="/login" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
+                {t("common.loginLink")}
+              </Link>
+            </p>
+          </div>
+        ) : maintenance ? (
+          <div className="anim-scale-in flex flex-col gap-3 rounded-2xl border border-amber-300/60 bg-amber-500/10 p-6">
+            <p className="text-sm font-bold leading-6 text-amber-900 dark:text-amber-100">🔧 {t("maintenance.notice")}</p>
+            <p className="text-sm leading-6 text-amber-900/90 dark:text-amber-100/90">{t("maintenance.signupBlocked")}</p>
+            <p className="text-sm text-thukha-indigo/70 dark:text-white/70">
+              {t("signup.hasAccount")}{" "}
               <Link href="/login" className="font-bold text-thukha-violet transition-colors hover:text-thukha-teal dark:text-thukha-lilac dark:hover:text-thukha-teal">
                 {t("common.loginLink")}
               </Link>

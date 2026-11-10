@@ -368,6 +368,15 @@ const my: Dict = {
   "admin.auditTitle": "မှတ်တမ်း (ဘယ်သူ ဘာလုပ်ခဲ့လဲ)",
   "admin.auditEmpty": "မှတ်တမ်း မရှိသေးဘူး။",
   "admin.annTitle": "ကြေညာချက်များ (Customer တွေကို ကြေညာတာ)",
+  // Maintenance mode (admin temporarily closes login)
+  "admin.maintTitle": "Login ခနပိတ်ထားခြင်း (Maintenance)",
+  "admin.maintText": "ဖွင့်ထားရင် Customer တွေ အသစ် ဝင်လို့/အကောင့်ဖွင့်လို့ မရဘူး။ Admin က ပုံမှန် ဝင်လို့ရတယ်။ ဝင်ပြီးသား user တွေက ဆက်သုံးနေဦးမယ်။",
+  "admin.maintOn": "Login ပိတ်ထားတယ်",
+  "admin.maintOff": "Login ဖွင့်ထားတယ်",
+  "admin.maintEnable": "Login ခနပိတ်ပါ",
+  "admin.maintDisable": "Login ပြန်ဖွင့်ပါ",
+  "admin.maintSaved": "သိမ်းပြီးပြီ",
+  "admin.maintFailed": "သိမ်း၍ မရပါ။",
   "admin.annTitleLabel": "ခေါင်းစဉ်",
   "admin.annBodyLabel": "အကြောင်းအရာ",
   "admin.annCreate": "ကြေညာချက် တင်ပါ",
@@ -486,6 +495,10 @@ const my: Dict = {
   "support.adminResolvedLocked": "ဖြေရှင်းပြီးပြီ — ထပ်ဖြေလို့ မရတော့ပါ။",
   "support.backToAdmin": "Admin Dashboard ကို ပြန်သွားပါ",
   "support.adminOpenCount": "မဖြေရသေး Ticket {count} ခု",
+  // Maintenance mode (shown on login / signup when it is on)
+  "maintenance.notice": "စနစ် ခနပိတ်ထားတယ် — အခု Admin ပဲ ဝင်လို့ရတယ်။",
+  "maintenance.blocked": "စနစ် ခနပိတ်ထားလို့ ဝင်လို့ မရသေးဘူး။ နောက်မှ ပြန်ဝင်ကြည့်ပါ။",
+  "maintenance.signupBlocked": "စနစ် ခနပိတ်ထားလို့ အကောင့် အသစ် ဖွင့်လို့ မရသေးဘူး။",
   // Notifications (header bell)
   "notif.title": "အကြောင်းကြားစာများ",
   "notif.empty": "အကြောင်းကြားစာ မရှိသေးဘူး။",
@@ -865,6 +878,15 @@ const en: Dict = {
   "admin.auditTitle": "Audit log (who did what)",
   "admin.auditEmpty": "No audit log yet.",
   "admin.annTitle": "Announcements (to customers)",
+  // Maintenance mode (admin temporarily closes login)
+  "admin.maintTitle": "Temporarily close login (Maintenance)",
+  "admin.maintText": "While on, customers can't log in or sign up. Admins can still log in normally. Users who are already logged in stay logged in.",
+  "admin.maintOn": "Login is closed",
+  "admin.maintOff": "Login is open",
+  "admin.maintEnable": "Close login for now",
+  "admin.maintDisable": "Reopen login",
+  "admin.maintSaved": "Saved",
+  "admin.maintFailed": "Could not save.",
   "admin.annTitleLabel": "Title",
   "admin.annBodyLabel": "Body",
   "admin.annCreate": "Post announcement",
@@ -983,6 +1005,10 @@ const en: Dict = {
   "support.adminResolvedLocked": "Resolved — cannot reply again.",
   "support.backToAdmin": "Back to Admin Dashboard",
   "support.adminOpenCount": "{count} tickets waiting for a reply",
+  // Maintenance mode (shown on login / signup when it is on)
+  "maintenance.notice": "The system is temporarily closed — only admins can log in right now.",
+  "maintenance.blocked": "The system is temporarily closed, so you can't log in yet. Please try again later.",
+  "maintenance.signupBlocked": "The system is temporarily closed, so you can't sign up yet.",
   // Notifications (header bell)
   "notif.title": "Notifications",
   "notif.empty": "No notifications yet.",
