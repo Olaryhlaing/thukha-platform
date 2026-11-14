@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Myanmar, Padauk, Noto_Serif_Myanmar, Playfair_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import PwaRegister from "@/components/PwaRegister";
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="relative z-10 flex flex-1 flex-col pb-24">{children}</div>
           <SiteFooter />
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
