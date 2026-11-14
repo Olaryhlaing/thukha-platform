@@ -33,6 +33,14 @@ export async function DELETE(request: Request) {
   } catch {
     // Account delete continues below regardless.
   }
+  try {
+    const { data: designFiles } = await service.storage.from("designs").list(id);
+    if (designFiles && designFiles.length > 0) {
+      await service.storage.from("designs").remove(designFiles.map((f) => `${id}/${f.name}`));
+    }
+  } catch {
+    // Account delete continues below regardless.
+  }
   await service.from("usage_events").delete().eq("owner_id", id);
   await service.from("generations").delete().eq("owner_id", id);
   await service.from("designs").delete().eq("owner_id", id);

@@ -1,45 +1,44 @@
-# Audit Log — Tab အသစ် `/admin/audit` (2026-11-10)
+# ThuKha Platform — Gemini မှာ ဆက်လုပ်ဖို့ (2026-11-14)
 
-Audit log ကို Admin Dashboard ထဲက အပိုင်း အဖြစ် မထားတော့ဘဲ Header Nav
-မှာ Tab တစ်ခု အနေနဲ့ ခွဲလိုက်ပြီ။ Lint 0 errors, Build success (local
-commit `dcbe291`)။ Database ပြင်စရာ မရှိဘူး။
+`GEMINI.md` တစ်ဖိုင်တည်းနဲ့ Gemini မှာ ဆက်လုပ်လို့ရပြီ။ Local commit
+`dcbe291` (2026-11-10) အထိ အခြေအနေ အကုန် ပါပြီးသား — 2026-11-03 က
+HANDOVER.md အဟောင်းက အခုတော့ ခေတ်နောက်ကျနေပြီ (Batch 1+2, Support,
+Notification, Maintenance, Audit Tab, Duplicate Signup Block တို့
+မပါဘူး)။
 
-## ဘာတွေ ပြောင်းလဲ?
+## သုံးနည်း ၂ မျိုး
 
-- **Header Tab အသစ် (Admin ပဲ မြင်ရတယ်):** အလယ် Nav မှာ ဖန်တီးပါ၊
-  ဒီဇိုင်းများ၊ အက်ဒမင်၊ ဖောက်သည် ဝန်ဆောင်မှု တို့ဘေးမှာ **"မှတ်တမ်း"**
-  Tab တစ်ခု ပေါ်မယ် — နှိပ်ရင် `/admin/audit` (Audit Log စာမျက်နှာ) ကို
-  သွားမယ်။ Customer တွေဆီမှာ ဒီ Tab မပေါ်ဘူး။ ဖုန်း Hamburger Menu
-  ထဲမှာလည်း ပေါ်တယ်။
-- **စာမျက်နှာ အသစ် `/admin/audit`:** Admin ပဲ ဝင်လို့ရတယ် (Customer/
-  Guest ဝင်ရင် /create ကို ပြန်ပို့မယ်)။ နောက်ဆုံး မှတ်တမ်း ၁၀၀ အထိ ပြမယ်
-  (အရင် Dashboard မှာ ၅၀ ပဲ ပြတာ) — ဘယ်သူ ဘာလုပ်ခဲ့လဲ၊ ဘယ်သူ့ကို၊
-  ဘယ်အချိန်က ဆိုတာ အရင်အတိုင်း။ အပေါ်မှာ "← Admin Dashboard ကို
-  ပြန်သွားပါ" Link ပါတယ်။
-- **Dashboard (/admin):** Audit Log အပိုင်း ဖြုတ်လိုက်ပြီ။ Suspend/Flag
-  လုပ်ရင် ပေါ်တဲ့ အကြောင်းကြားစာကတော့ Users အပိုင်းမှာ ဆက်ပေါ်မယ်
-  (အရင် Audit Log အပိုင်းမှာ ပြတာ၊ အခု Users အပိုင်းကို ရွှေ့ထားတယ်)။
+### ၁။ Gemini CLI (PC မှာ, Code ကို တိုက်ရိုက် ပြင်ခိုင်းချင်ရင်) — အကြံပြုတယ်
+1. `GEMINI.md` ကို `D:\thukha-platform-fresh` (Project Folder) ရဲ့
+   အမြစ်ထဲ ကူးထည့်ပါ → Commit → Push (ပုံမှန်အတိုင်း)။
+2. Terminal/Command Prompt မှာ အဲဒီ Folder ထဲ သွား → `gemini` လို့ ရိုက်ပြီး
+   Enter နှိပ်ပါ။
+3. Gemini CLI က `GEMINI.md` ကို အလိုအလျောက် ဖတ်ပြီး Project အကြောင်း
+   သိသွားမယ်။ ပြီးရင် တစ်ခု‌ချင်း ခိုင်းပါ — ဥပမာ "On /create, show X
+   when Y"။
+4. CLI က File တွေကို တိုက်ရိုက် ပြင်/စမ်းပေးနိုင်တယ် (`npm run lint`,
+   `npm run build` ပါ လုပ်ပေးတယ်)။ Push/Deploy ကတော့ ကိုယ်တိုင် လုပ်ပါ။
 
-## Copy-in အဆင့်
+### ၂။ Gemini Web (gemini.google.com, Chat မှာ မေးချင်ရင်)
+1. https://gemini.google.com ဖွင့် → Chat အသစ်။
+2. `GEMINI.md` File ရဲ့ အကြောင်းအရာ အကုန်လုံးကို Copy → Chat ထဲ Paste
+   လုပ်ပါ။ ပြီးရင် တစ်ခု‌ချင်း ခိုင်းပါ (GEMINI.md ရဲ့ အပိုင်း ၉ မှာ
+   Starter Prompt ပါပြီးသား)။
+3. **သတိထားရမှာ:** Web Chat က ကိုယ့် Computer ရဲ့ File တွေကို မမြင်ရဘူး၊
+   မပြင်ပေးနိုင်ဘူး — Code ကို Chat ထဲမှာ ရေးပေးရုံပဲ၊ ကိုယ်တိုင် ကူးထည့်ရမယ်။
+   File ပြင်တာ၊ Build စမ်းတာ လိုချင်ရင် CLI (နည်းလမ်း ၁) ကို သုံးပါ။
 
-Pack ထဲက ဖိုင် ၅ ခု ကို `D:\thukha-platform-fresh` ထဲ လမ်းကြောင်းအတိုင်း
-ကူးထည့်ပါ (ဖိုင်အဟောင်းကို အစားထိုးပါ) → Commit → Push → Vercel Ready →
-Hard Refresh (Ctrl+Shift+R)။
+## အရေးကြီးတဲ့ သတိပေးချက်
 
-## စမ်းနည်း
+- **API Key / Password ကို Gemini Chat ထဲ ဘယ်တော့မှ မထည့်ပါနဲ့** —
+  GEMINI.md ထဲမှာလည်း Key နာမည်ပဲ ပါတယ်၊ Key တန်ဖိုး မပါဘူး။
+- Gemini ကို တစ်ခါတည်း အများကြီး မခိုင်းပါနဲ့ — တစ်ခု‌ချင်း၊ အသေးစိတ်
+  ခိုင်းပါ။ ပြီးရင် Diff ကို သေချာဖတ်၊ Browser မှာ စမ်း၊ ပြီးမှ
+  နောက်တစ်ခုကို ဆက်ပါ။
+- Gemini က အသစ်ကနေ ပြန်စဖို့ ကြိုးစားရင် GEMINI.md ကို ပြန်ဖတ်ခိုင်းပါ။
 
-1. **Admin Account နဲ့ Login** → Header အလယ်မှာ "မှတ်တမ်း" Tab ပေါ်ရမယ် →
-   နှိပ်ရင် /admin/audit ပွင့်ပြီး မှတ်တမ်း စာရင်း ပေါ်ရမယ် (၁၀၀ အထိ)။
-2. /admin Dashboard မှာ Audit Log အပိုင်း မရှိတော့ဘူး။
-3. User တစ်ယောက်ကို Suspend လုပ် → Users အပိုင်းမှာ အကြောင်းကြားစာ
-   ပေါ်ရမယ်။
-4. **Customer Account နဲ့ /admin/audit ရိုက်ဝင်** → /create ကို ပြန်ရောက်ရမယ်။
-5. **Customer Account နဲ့ Login** → Header မှာ "မှတ်တမ်း" Tab မပေါ်ရဘူး။
+## ဖိုင်စာရင်း (၁ ဖိုင် + ဒီ README)
 
-## ဖိုင်စာရင်း (၅ ဖိုင်)
-
-- `src/app/admin/audit/page.tsx` — အသစ် (Audit Log စာမျက်နှာ)
-- `src/app/admin/page.tsx` — Audit Log အပိုင်း ဖြုတ် + Suspend/Flag စာကို Users အပိုင်းကို ရွှေ့
-- `src/components/AuthNav.tsx` — `AdminAuditNavLink` အသစ် (Admin ပဲ မြင်ရတဲ့ Tab)
-- `src/components/SiteHeader.tsx` — အလယ် Nav မှာ Tab ထည့်
-- `src/lib/i18n.ts` — `nav.audit` Key အသစ် (မြန်မာ + အင်္ဂလိပ်)
+- `GEMINI.md` — ThuKha Project အကြောင်း အကုန် (Stack, Route များ,
+  Token/Pricing, Database 12 Table, စည်းမျဉ်း, လက်ရှိ အခြေအနေ,
+  လုပ်ဖို့ ကျန်တာများ, Starter Prompt)

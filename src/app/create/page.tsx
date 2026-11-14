@@ -340,6 +340,7 @@ function CreatePageInner() {
   }
   const [overlayMessage, setOverlayMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  const [savingDesign, setSavingDesign] = useState(false);
   // Caption + hashtags (Batch 1 launch feature): the template
   // /api/generate-caption already existed but /create never called
   // it. This is a template, not an AI model — the UI says so.
@@ -857,12 +858,30 @@ function CreatePageInner() {
       format: channelInfo.format,
     };
     if (authToken) {
-      const res = await fetch("/api/designs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
-        body: JSON.stringify({ prompt: aiPrompt, channel, format: channelInfo.format }),
-      });
-      setSavedMessage(res.ok ? t("create.msgDesignSaved") : t("create.msgDesignSaveFailed"));
+      setSavingDesign(true);
+      setSavedMessage("");
+      try {
+        const res = await fetch("/api/designs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            prompt: aiPrompt,
+            channel,
+            format: channelInfo.format,
+            ...(selected ? { imageDataUrl: selected } : {}),
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setSavedMessage(
+          res.ok
+            ? t("create.msgDesignSaved")
+            : (serverErrorText(lang, json.error) ?? t("create.msgDesignSaveFailed")),
+        );
+      } catch {
+        setSavedMessage(t("create.msgDesignSaveFailed"));
+      } finally {
+        setSavingDesign(false);
+      }
       return;
     }
     try {
@@ -1469,8 +1488,13 @@ function CreatePageInner() {
                 </a>
               </>
             )}
-            <button type="button" onClick={saveDesign} className="flex min-h-[44px] items-center justify-center rounded-xl border border-thukha-violet/30 bg-white/40 px-6 py-3 font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-[1.01] active:scale-[0.99] dark:border-white/10 dark:bg-white/5 dark:text-thukha-lilac dark:hover:bg-white/10">
-              {t("create.saveDesign")}
+            <button
+              type="button"
+              onClick={saveDesign}
+              disabled={savingDesign}
+              className="flex min-h-[44px] items-center justify-center rounded-xl border border-thukha-violet/30 bg-white/40 px-6 py-3 font-bold text-thukha-violet transition-all duration-200 hover:border-thukha-violet hover:bg-thukha-violet/10 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-thukha-lilac dark:hover:bg-white/10"
+            >
+              {savingDesign ? t("create.savingDesign") : t("create.saveDesign")}
             </button>
             {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}
             {/* Caption + hashtags for the Facebook post */}
