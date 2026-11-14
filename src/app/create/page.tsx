@@ -174,7 +174,7 @@ function CreatePageInner() {
   const [dismissedAnns, setDismissedAnns] = useState<Set<string>>(new Set());
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [imageProvider, setImageProvider] = useState<string>("");
-  const [overlayHeadline, setOverlayHeadline] = useState("");
+  const [overlayHeadline, setOverlayHeadline] = useState(template?.headline ?? "");
   const [overlaySub, setOverlaySub] = useState("");
   const [overlayPosition, setOverlayPosition] = useState<"top" | "center" | "bottom">("top");
   const [overlayColor, setOverlayColor] = useState<"white" | "black">("white");
@@ -196,9 +196,7 @@ function CreatePageInner() {
   const [showBrandName, setShowBrandName] = useState(true);
   const [overlayCustomBrand, setOverlayCustomBrand] = useState<{ x: number; y: number } | null>(null);
 
-  // Brand preset + Logo upload inside /create (Batch 3B):
-  // logo is drawn by the browser (never AI), preserving natural
-  // aspect ratio, draggable on preview, and composited on PNG export.
+  // Brand preset + Logo upload inside /create (Batch 3B)
   type BrandPreset = {
     id: string;
     name: string;
@@ -219,6 +217,31 @@ function CreatePageInner() {
   const [overlayCustomLogo, setOverlayCustomLogo] = useState<{ x: number; y: number } | null>(null);
   const [brandMessage, setBrandMessage] = useState("");
   const [savingBrand, setSavingBrand] = useState(false);
+
+  // Own Templates / Favourites (Batch 3C)
+  type UserTemplate = {
+    id: string;
+    name: string;
+    business_type: string | null;
+    goal: string | null;
+    channel: string | null;
+    headline: string | null;
+    subheadline: string | null;
+    prompt: string | null;
+    is_favorite: boolean;
+  };
+  const [userTemplates, setUserTemplates] = useState<UserTemplate[]>(() => {
+    if (typeof window === "undefined" || getSupabase()) return [];
+    try {
+      return JSON.parse(localStorage.getItem("thukha-user-templates") ?? "[]") as UserTemplate[];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedUserTemplateId, setSelectedUserTemplateId] = useState("");
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateMessage, setTemplateMessage] = useState("");
 
   const previewRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
@@ -380,10 +403,34 @@ function CreatePageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load saved brand presets (cloud when logged in, localStorage for guests).
+  // Load saved brand presets & user templates
   useEffect(() => {
+    const preselectTplId = searchParams.get("user_template") ?? "";
+    function applyTpl(list: UserTemplate[]) {
+      if (!preselectTplId) return;
+      const found = list.find((u) => u.id === preselectTplId);
+      if (!found) return;
+      setSelectedUserTemplateId(found.id);
+      if (found.business_type && BUSINESS_TYPES.includes(found.business_type)) setBusinessType(found.business_type);
+      if (found.goal && GOALS.includes(found.goal)) setGoal(found.goal);
+      if (found.channel && CHANNELS.some((c) => c.id === found.channel)) setChannel(found.channel);
+      if (found.headline !== null) setOverlayHeadline(found.headline);
+      if (found.subheadline !== null) setOverlaySub(found.subheadline);
+      if (found.prompt !== null) setAiPrompt(found.prompt);
+    }
+
     const supabase = getSupabase();
-    if (!supabase) return;
+    if (!supabase) {
+      try {
+        const localTpls = JSON.parse(localStorage.getItem("thukha-user-templates") ?? "[]") as UserTemplate[];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUserTemplates(localTpls);
+        applyTpl(localTpls);
+      } catch {
+        // Ignore parse error
+      }
+      return;
+    }
     supabase.auth.getSession().then(async ({ data }) => {
       const token = data.session?.access_token;
       if (!token) {
@@ -392,19 +439,110 @@ function CreatePageInner() {
         } catch {
           setBrandPresets([]);
         }
+        try {
+          const localTpls = JSON.parse(localStorage.getItem("thukha-user-templates") ?? "[]") as UserTemplate[];
+          setUserTemplates(localTpls);
+          applyTpl(localTpls);
+        } catch {
+          setUserTemplates([]);
+        }
         return;
       }
       try {
-        const res = await fetch("/api/brands", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = (await res.json()) as { brands?: BrandPreset[] };
-        if (res.ok && Array.isArray(json.brands)) setBrandPresets(json.brands);
+        const [bres, tres] = await Promise.all([
+          fetch("/api/brands", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/user-templates", { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        const bjson = (await bres.json()) as { brands?: BrandPreset[] };
+        if (bres.ok && Array.isArray(bjson.brands)) setBrandPresets(bjson.brands);
+        const tjson = (await tres.json()) as { templates?: UserTemplate[] };
+        if (tres.ok && Array.isArray(tjson.templates)) {
+          setUserTemplates(tjson.templates);
+          applyTpl(tjson.templates);
+        }
       } catch {
-        // Brand presets are optional — /create still works without them.
+        // Optional presets
       }
     });
-  }, []);
+  }, [searchParams]);
+
+  function selectUserTemplate(id: string) {
+    setSelectedUserTemplateId(id);
+    setTemplateMessage("");
+    const found = userTemplates.find((u) => u.id === id);
+    if (!found) return;
+    if (found.business_type && BUSINESS_TYPES.includes(found.business_type)) setBusinessType(found.business_type);
+    if (found.goal && GOALS.includes(found.goal)) setGoal(found.goal);
+    if (found.channel && CHANNELS.some((c) => c.id === found.channel)) setChannel(found.channel);
+    setOverlayHeadline(found.headline ?? "");
+    setOverlaySub(found.subheadline ?? "");
+    setAiPrompt(found.prompt ?? "");
+  }
+
+  async function saveUserTemplate() {
+    const trimmed = newTemplateName.trim();
+    if (!trimmed) {
+      setTemplateMessage(t("create.myTemplateNeedName"));
+      return;
+    }
+    setSavingTemplate(true);
+    setTemplateMessage("");
+    if (authToken) {
+      try {
+        const res = await fetch("/api/user-templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            name: trimmed,
+            businessType,
+            goal,
+            channel,
+            headline: overlayHeadline,
+            subheadline: overlaySub,
+            prompt: aiPrompt,
+            isFavorite: true,
+          }),
+        });
+        const json = (await res.json()) as { template?: UserTemplate; error?: string };
+        if (!res.ok || !json.template) {
+          setTemplateMessage(serverErrorText(lang, json.error) ?? t("create.myTemplateSaveFailed"));
+        } else {
+          setUserTemplates((prev) => [json.template!, ...prev]);
+          setSelectedUserTemplateId(json.template.id);
+          setNewTemplateName("");
+          setTemplateMessage(t("create.myTemplateSaved"));
+        }
+      } catch {
+        setTemplateMessage(t("create.myTemplateSaveFailed"));
+      } finally {
+        setSavingTemplate(false);
+      }
+      return;
+    }
+    try {
+      const item: UserTemplate = {
+        id: `guest-tpl-${Date.now()}`,
+        name: trimmed,
+        business_type: businessType,
+        goal,
+        channel,
+        headline: overlayHeadline,
+        subheadline: overlaySub,
+        prompt: aiPrompt,
+        is_favorite: true,
+      };
+      const next = [item, ...userTemplates].slice(0, 20);
+      localStorage.setItem("thukha-user-templates", JSON.stringify(next));
+      setUserTemplates(next);
+      setSelectedUserTemplateId(item.id);
+      setNewTemplateName("");
+      setTemplateMessage(t("create.myTemplateSaved"));
+    } catch {
+      setTemplateMessage(t("create.myTemplateSaveFailed"));
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
 
   function selectBrandPreset(id: string) {
     setSelectedBrandId(id);
@@ -715,7 +853,7 @@ function CreatePageInner() {
           await document.fonts.load(`400 ${subSize}px ${font}`);
           await document.fonts.load(`bold ${Math.round(headlineSize * 0.6)}px ${font}`);
         } catch {
-          // Font API unavailable: draw anyway with the fallback stack.
+          // Font API unavailable
         }
         const headlineLines = overlayHeadline.trim()
           ? drawLines(overlayHeadline.trim(), headlineSize, true)
@@ -791,7 +929,6 @@ function CreatePageInner() {
         drawBlock(brandLines, brandSize, true, brandTop, overlayCustomBrand);
       }
 
-      // Composite the business logo (preserving natural aspect ratio, never stretched).
       if (logoSrc) {
         try {
           const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -814,7 +951,7 @@ function CreatePageInner() {
           ctx.shadowOffsetY = 2;
           ctx.drawImage(logoImg, cx - logoW / 2, cy - logoH / 2, logoW, logoH);
         } catch {
-          // Continue exporting even if an external logo fails to load.
+          // Continue exporting
         }
       }
 
@@ -981,7 +1118,27 @@ function CreatePageInner() {
         <div className="flex flex-col gap-6">
       <section className={sectionClass}>
         <h2 className="text-lg font-bold">{t("create.business")}</h2>
-        {/* Brand Preset bar inside /create (no separate /brands page) */}
+        {/* Own Templates / Favourites quick loader */}
+        {userTemplates.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3.5 dark:border-amber-300/20 dark:bg-amber-500/10">
+            <label className={labelClass}>
+              {t("create.myTemplateLabel")}
+              <select
+                value={selectedUserTemplateId}
+                onChange={(e) => selectUserTemplate(e.target.value)}
+                className={`${inputClass} mt-1`}
+              >
+                <option value="">{t("create.myTemplateNone")}</option>
+                {userTemplates.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.is_favorite ? "★ " : ""}{u.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+        {/* Brand Preset bar inside /create */}
         <div className="flex flex-col gap-2 rounded-2xl border border-thukha-lilac/30 bg-thukha-lilac/10 p-3.5 dark:border-white/10 dark:bg-white/5">
           <label className={labelClass}>
             {t("create.brandPresetLabel")}
@@ -1039,7 +1196,6 @@ function CreatePageInner() {
             <span className="block text-thukha-indigo/70 dark:text-white/70">{t("create.showBrandHelp")}</span>
           </span>
         </label>
-        {/* Business Logo Upload (browser-composited, never redrawn by AI) */}
         <div className="flex flex-col gap-2">
           <label className={labelClass}>
             {t("create.logoLabel")}
@@ -1374,6 +1530,35 @@ function CreatePageInner() {
         )}
       </section>
 
+      {/* Save current settings as Own Template / Favourite */}
+      <section className={sectionClass}>
+        <h2 className="text-lg font-bold">⭐ {t("create.saveTemplateTitle")}</h2>
+        <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
+          {t("create.saveTemplateHelp")}
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={newTemplateName}
+            onChange={(e) => setNewTemplateName(e.target.value)}
+            placeholder={t("create.myTemplateNamePlaceholder")}
+            maxLength={120}
+            className={`${inputClass} flex-1`}
+          />
+          <button
+            type="button"
+            onClick={saveUserTemplate}
+            disabled={savingTemplate}
+            className="min-h-[44px] shrink-0 rounded-xl bg-thukha-violet px-5 py-2.5 text-sm font-bold text-white shadow-md disabled:opacity-50"
+          >
+            {savingTemplate ? t("create.savingDesign") : t("create.saveTemplateButton")}
+          </button>
+        </div>
+        {templateMessage && (
+          <p className="text-sm font-semibold text-thukha-indigo dark:text-white">{templateMessage}</p>
+        )}
+      </section>
+
         </div>
         <aside className="lg:sticky lg:top-24">
       <section className={sectionClass}>
@@ -1404,7 +1589,6 @@ function CreatePageInner() {
                 : t("create.previewPlaceholderNoImage")}
             </div>
           )}
-          {/* Draggable Business Logo layer (always browser-drawn, never AI) */}
           {logoSrc && (() => {
             const pos = overlayCustomLogo ?? defaultCustomPos("logo");
             const widthClass = logoSize === "small" ? "w-12 sm:w-14" : logoSize === "large" ? "w-24 sm:w-28" : "w-16 sm:w-20";

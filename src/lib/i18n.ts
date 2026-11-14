@@ -1,13 +1,6 @@
 /* ThuKha language system: Burmese (my, the original UI) and
    English (en), switched from the header toggle and saved in
-   localStorage ("thukha-lang"). Pages call t("key") for UI text;
-   a missing English key falls back to the Burmese string, so the
-   app never renders a bare key. Deliberately NOT translated:
-   Myanmar business content data — business-type values, promo
-   text samples and prompt examples on /create — because those
-   ARE the Burmese promo content customers create, not UI chrome.
-   Server-returned error text is mapped in serverErrorText() below
-   for the known messages; anything unknown is shown as-is. */
+   localStorage ("thukha-lang"). */
 
 export type Lang = "my" | "en";
 
@@ -218,6 +211,14 @@ const my: Dict = {
   "brands.type": "လုပ်ငန်းအမျိုးအစား",
   "brands.add": "ဘရန်း ထည့်ပါ",
   "brands.empty": "ဘရန်း မရှိသေးဘူး။ အပေါ်ကနေ ထည့်ပါ။",
+  // Templates (Own templates / Favourites)
+  "templates.myTitle": "ကိုယ်ပိုင် Template များနှင့် အကြိုက်ဆုံး",
+  "templates.mySubtitle": "/create မှာ စိတ်ကြိုက် ပြင်ပြီး သိမ်းထားတဲ့ Template တွေကို ဒီမှာ ပြန်ရွေးသုံးလို့ရတယ်။",
+  "templates.favoritesOnly": "အကြိုက်ဆုံး (★) ပဲ ပြပါ",
+  "templates.favoritesEmpty": "အကြိုက်ဆုံး မှတ်ထားတဲ့ Template မရှိသေးဘူး။",
+  "templates.myEmpty": "ကိုယ်ပိုင် Template မသိမ်းရသေးဘူး —",
+  "templates.toggleFavorite": "အကြိုက်ဆုံး မှတ်သားပါ",
+  "templates.useTemplate": "ဒီ template နဲ့ ဖန်တီးပါ",
   // Designs
   "designs.title": "ဒီဇိုင်းများ",
   "designs.loggedIn": "ဝင်ထားတယ် — ဒီဇိုင်းတွေကို Supabase ထဲ သိမ်းထားတယ်။",
@@ -275,6 +276,15 @@ const my: Dict = {
   "create.businessType": "လုပ်ငန်းအမျိုးအစား",
   "create.businessName": "လုပ်ငန်းအမည်",
   "create.businessNamePlaceholder": "ဥပမာ — Yangon Kitchen",
+  "create.myTemplateLabel": "ကိုယ်ပိုင် Template များ (★)",
+  "create.myTemplateNone": "— ကိုယ်ပိုင် Template ရွေးသုံးပါ —",
+  "create.saveTemplateTitle": "ကိုယ်ပိုင် Template အဖြစ် သိမ်းပါ",
+  "create.saveTemplateHelp": "လက်ရှိ လုပ်ငန်းအမျိုးအစား၊ ခေါင်းစဉ်၊ စာကြောင်းနဲ့ Prompt တွေကို နောက်တစ်ခါ ပြန်သုံးလို့ရအောင် Template သိမ်းထားပါ။",
+  "create.myTemplateNamePlaceholder": "Template အမည် (ဥပမာ — တနင်္ဂနွေ အထူးလျှော့ဈေး)",
+  "create.saveTemplateButton": "Template သိမ်းပါ",
+  "create.myTemplateNeedName": "Template အမည် အရင် ရေးပေးပါ။",
+  "create.myTemplateSaved": "ကိုယ်ပိုင် Template သိမ်းပြီးပြီ — Templates စာမျက်နှာမှာလည်း ကြည့်လို့ရတယ်။",
+  "create.myTemplateSaveFailed": "Template သိမ်းလို့ မရပါ။",
   "create.brandPresetLabel": "သိမ်းထားသော Brand Preset",
   "create.brandPresetNone": "— Brand Preset ရွေးပါ (မရွေးလည်း ရတယ်) —",
   "create.brandPresetSave": "ဒီ Brand ကို Preset သိမ်းပါ",
@@ -387,7 +397,6 @@ const my: Dict = {
   "admin.auditTitle": "မှတ်တမ်း (ဘယ်သူ ဘာလုပ်ခဲ့လဲ)",
   "admin.auditEmpty": "မှတ်တမ်း မရှိသေးဘူး။",
   "admin.annTitle": "ကြေညာချက်များ (Customer တွေကို ကြေညာတာ)",
-  // Maintenance mode (admin temporarily closes login)
   "admin.maintTitle": "Login ခနပိတ်ထားခြင်း (Maintenance)",
   "admin.maintText": "ဖွင့်ထားရင် Customer တွေ အသစ် ဝင်လို့/အကောင့်ဖွင့်လို့ မရဘူး။ Admin က ပုံမှန် ဝင်လို့ရတယ်။ ဝင်ပြီးသား user တွေက ဆက်သုံးနေဦးမယ်။",
   "admin.maintOn": "Login ပိတ်ထားတယ်",
@@ -514,11 +523,11 @@ const my: Dict = {
   "support.adminResolvedLocked": "ဖြေရှင်းပြီးပြီ — ထပ်ဖြေလို့ မရတော့ပါ။",
   "support.backToAdmin": "Admin Dashboard ကို ပြန်သွားပါ",
   "support.adminOpenCount": "မဖြေရသေး Ticket {count} ခု",
-  // Maintenance mode (shown on login / signup when it is on)
+  // Maintenance mode
   "maintenance.notice": "စနစ် ခနပိတ်ထားတယ် — အခု Admin ပဲ ဝင်လို့ရတယ်။",
   "maintenance.blocked": "စနစ် ခနပိတ်ထားလို့ ဝင်လို့ မရသေးဘူး။ နောက်မှ ပြန်ဝင်ကြည့်ပါ။",
   "maintenance.signupBlocked": "စနစ် ခနပိတ်ထားလို့ အကောင့် အသစ် ဖွင့်လို့ မရသေးဘူး။",
-  // Notifications (header bell)
+  // Notifications
   "notif.title": "အကြောင်းကြားစာများ",
   "notif.empty": "အကြောင်းကြားစာ မရှိသေးဘူး။",
   "notif.markAllRead": "အားလုံး ဖတ်ပြီးလို့ မှတ်ပါ",
@@ -747,6 +756,14 @@ const en: Dict = {
   "brands.type": "Business type",
   "brands.add": "Add Brand",
   "brands.empty": "No brands yet. Add one above.",
+  // Templates (Own templates / Favourites)
+  "templates.myTitle": "My Templates & Favourites",
+  "templates.mySubtitle": "Reuse your custom presets saved from /create.",
+  "templates.favoritesOnly": "Favourites (★) only",
+  "templates.favoritesEmpty": "No favourite templates marked yet.",
+  "templates.myEmpty": "No personal templates saved yet —",
+  "templates.toggleFavorite": "Toggle favourite",
+  "templates.useTemplate": "Create with this template",
   // Designs
   "designs.title": "Designs",
   "designs.loggedIn": "Logged in — Designs are saved in Supabase.",
@@ -804,6 +821,15 @@ const en: Dict = {
   "create.businessType": "Business type",
   "create.businessName": "Business name",
   "create.businessNamePlaceholder": "e.g. Yangon Kitchen",
+  "create.myTemplateLabel": "My Saved Templates (★)",
+  "create.myTemplateNone": "— Load a saved template —",
+  "create.saveTemplateTitle": "Save as My Template",
+  "create.saveTemplateHelp": "Save your current business type, headline, subheadline, and prompt so you can reuse them anytime.",
+  "create.myTemplateNamePlaceholder": "Template name (e.g. Weekend Flash Sale)",
+  "create.saveTemplateButton": "Save Template",
+  "create.myTemplateNeedName": "Please enter a template name first.",
+  "create.myTemplateSaved": "Template saved — you can also view it on the Templates page.",
+  "create.myTemplateSaveFailed": "Could not save template.",
   "create.brandPresetLabel": "Saved Brand Preset",
   "create.brandPresetNone": "— Select a Brand Preset (optional) —",
   "create.brandPresetSave": "Save as Brand Preset",
@@ -916,7 +942,6 @@ const en: Dict = {
   "admin.auditTitle": "Audit log (who did what)",
   "admin.auditEmpty": "No audit log yet.",
   "admin.annTitle": "Announcements (to customers)",
-  // Maintenance mode (admin temporarily closes login)
   "admin.maintTitle": "Temporarily close login (Maintenance)",
   "admin.maintText": "While on, customers can't log in or sign up. Admins can still log in normally. Users who are already logged in stay logged in.",
   "admin.maintOn": "Login is closed",
@@ -1043,11 +1068,11 @@ const en: Dict = {
   "support.adminResolvedLocked": "Resolved — cannot reply again.",
   "support.backToAdmin": "Back to Admin Dashboard",
   "support.adminOpenCount": "{count} tickets waiting for a reply",
-  // Maintenance mode (shown on login / signup when it is on)
+  // Maintenance mode
   "maintenance.notice": "The system is temporarily closed — only admins can log in right now.",
   "maintenance.blocked": "The system is temporarily closed, so you can't log in yet. Please try again later.",
   "maintenance.signupBlocked": "The system is temporarily closed, so you can't sign up yet.",
-  // Notifications (header bell)
+  // Notifications
   "notif.title": "Notifications",
   "notif.empty": "No notifications yet.",
   "notif.markAllRead": "Mark all as read",
@@ -1081,10 +1106,6 @@ export function translate(lang: Lang, key: string, vars?: Record<string, string 
   );
 }
 
-/* Map a known server-returned Burmese error to English when the
-   UI language is English. Unknown messages pass through unchanged
-   (better a Burmese reason than a wrong English one). The token
-   message carries numbers, so it is matched by pattern. */
 export function serverErrorText(lang: Lang, msg: string | undefined): string | undefined {
   if (lang !== "en" || !msg) return msg;
   const map: Record<string, string> = {
@@ -1092,6 +1113,8 @@ export function serverErrorText(lang: Lang, msg: string | undefined): string | u
     "Brand ဖျက်လို့ မရပါ။": "Could not delete the brand.",
     "Design သိမ်းလို့ မရပါ။": "Could not save the design.",
     "Design ဖျက်လို့ မရပါ။": "Could not delete the design.",
+    "Template သိမ်းလို့ မရပါ။": "Could not save the template.",
+    "Template ဖျက်လို့ မရပါ။": "Could not delete the template.",
     "Admin data ဖတ်လို့ မရပါ။": "Could not read admin data.",
     "Token ဖြည့်လို့ မရပါ။": "Could not refill tokens.",
     "Generation ဖျက်လို့ မရပါ။": "Could not delete the generation.",
