@@ -9,18 +9,6 @@ import { getSupabase } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/LanguageProvider";
 import { serverErrorText } from "@/lib/i18n";
 
-/*
- * ThuKha /create — minimal customer flow (2026-10-28), plus a
- * text overlay (2026-11-01, user request: "like before").
- * Text-first flow (2026-11-01): the customer types the overlay
- * text FIRST (section 1, before any image exists), then the AI
- * prompt (section 2). The overlay text is sent to the API only
- * as scene mood and is drawn as a separate layer on top of the
- * finished image in the browser, so Burmese text is always 100%
- * correct (the AI is still told to draw no text in the image).
- * No colors, no logo upload, no caption, no QA, no steps.
- */
-
 const BUSINESS_TYPES = [
   "စားသောက်ဆိုင်",
   "Online shop",
@@ -32,9 +20,6 @@ const BUSINESS_TYPES = [
 
 const GOALS = ["ရောင်းအား တိုးရန်", "Brand သိစေရန်", "Promotion ကြေညာရန်"];
 
-// Display labels for the select options. The option VALUE stays the
-// original Burmese string (templates, prompt examples and the API
-// match on it), only the shown label switches with the UI language.
 const BUSINESS_TYPE_LABELS_EN: Record<string, string> = {
   "စားသောက်ဆိုင်": "Restaurant",
   "Online shop": "Online shop",
@@ -56,14 +41,6 @@ const CHANNELS = [
   { id: "Menu / product card", format: "1080x1080" },
 ] as const;
 
-// Ready-to-use prompts (2026-11-01). Scene descriptions only —
-// the server already appends the hard rules (no text, no logo,
-// clean empty space at the top for the overlay text), so these
-// must NOT mention text, prices, or brand names. Each is kept
-// under 120 characters so the token cost stays at the base 10.
-// Each example has a `type` matching a BUSINESS_TYPES value, and
-// /create only shows the examples for the selected business type
-// (2026-11-01, user request: do not show all of them).
 const PROMPT_EXAMPLES = [
   {
     label: "စားသောက်ဆိုင် — မုန့်ဟင်းခါး",
@@ -127,12 +104,6 @@ const PROMPT_EXAMPLES = [
   },
 ];
 
-// Ready-to-try overlay texts (2026-11-01). Clicking one fills
-// both the headline and the subheadline in section 1, so the
-// customer can test the overlay without typing Burmese first.
-// The first one matches the Condo/Agency test case in the
-// 2026-11-01 screenshot. These are overlay text only — they are
-// never sent to the AI as image text.
 const TEXT_EXAMPLES = [
   { label: "Condo — ရောင်းမည်", headline: "Condo အသစ် ရောင်းမည်", sub: "မြို့လယ်နေရာ • အခန်းကျယ်ကျယ်" },
   { label: "လျှော့စျေး", headline: "50% လျှော့စျေး", sub: "ဒီအပတ်ပဲ ရမယ်" },
@@ -159,10 +130,6 @@ export default function CreatePage() {
 function CreatePageInner() {
   const searchParams = useSearchParams();
   const { t, lang } = useLanguage();
-  // Prefill from Templates / Brands / Designs links, from the URL
-  // itself (no effect needed): ?template=<id>, ?brand=<name>&type=<t>,
-  // ?prompt=<p>&channel=<c>. Template wins for type/channel/prompt
-  // unless a direct prompt/channel param overrides it.
   const template = TEMPLATES.find((t) => t.id === searchParams.get("template"));
   const paramChannel = searchParams.get("channel");
   const initialChannel = CHANNELS.some((c) => c.id === paramChannel)
@@ -185,22 +152,12 @@ function CreatePageInner() {
   const [aiError, setAiError] = useState("");
   const [aiImages, setAiImages] = useState<string[]>([]);
   const [selected, setSelected] = useState("");
-  // ThuKha tokens (customer's own credit, not the Gemini key):
-  // logged-in customers start 100 on the server; guests start 50
-  // in this browser only (GUEST_START_TOKENS). An old browser
-  // balance above 50 is capped to 50, so old guests do not keep
-  // the old 100. Lazy init: server renders 50, browser reads its
-  // own (capped) balance. suppressHydrationWarning is set on the
-  // balance pill below.
   const [tokens, setTokens] = useState(() => {
     if (typeof window === "undefined") return GUEST_START_TOKENS;
     const stored = Number(localStorage.getItem("thukha-tokens"));
     if (!Number.isFinite(stored) || stored < 0) return GUEST_START_TOKENS;
     return Math.min(stored, GUEST_START_TOKENS);
   });
-  // Guest generation count (browser only): how many images this
-  // browser has already generated as a guest. Counted only on
-  // success, never on failure; the test refill does NOT reset it.
   const [guestGenerations, setGuestGenerations] = useState(() => {
     if (typeof window === "undefined") return 0;
     const stored = Number(localStorage.getItem("thukha-guest-generations"));
@@ -208,52 +165,23 @@ function CreatePageInner() {
   });
   const [promptSuggestions, setPromptSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  // Server tokens (logged-in) take over from browser tokens (guest).
   const [serverTokens, setServerTokens] = useState<number | null>(null);
-  // Total tokens ever given (start + refills), from /api/tokens.
-  // This is the pill denominator — it must NOT be the hardcoded
-  // START_TOKENS (100), or a refilled customer shows 200/100.
-  // It does not change when an image is generated (only the
-  // balance drops). On a refill it now updates via the focus /
-  // pageshow refresh above — no hard reload needed.
   const [serverTotal, setServerTotal] = useState<number | null>(null);
-  // Admin accounts are unlimited (role=admin, server-side): no
-  // balance check, no deduction — the pill shows ∞ instead of a number.
   const [isUnlimited, setIsUnlimited] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
   type Ann = { id: string; title: string; body: string; created_at?: string };
   const [announcements, setAnnouncements] = useState<Ann[]>([]);
   const [dismissedAnns, setDismissedAnns] = useState<Set<string>>(new Set());
   const [authToken, setAuthToken] = useState<string | null>(null);
-  // Image provider (from the generate API's GET): "cloudflare" means
-  // the free FLUX model, which cannot edit reference images.
   const [imageProvider, setImageProvider] = useState<string>("");
-  // Text overlay (drawn on top of the finished image, never by AI):
-  // headline + optional subheadline, position, and text colour.
   const [overlayHeadline, setOverlayHeadline] = useState("");
   const [overlaySub, setOverlaySub] = useState("");
   const [overlayPosition, setOverlayPosition] = useState<"top" | "center" | "bottom">("top");
   const [overlayColor, setOverlayColor] = useState<"white" | "black">("white");
-  // Full customer control (2026-11-01, user request: "as they like"):
-  // size, alignment, and a translucent background behind the text.
-  // All three apply to both the live preview and the canvas PNG.
   const [overlaySize, setOverlaySize] = useState<"small" | "medium" | "large">("medium");
   const [overlayAlign, setOverlayAlign] = useState<"left" | "center" | "right">("center");
   const [overlayBg, setOverlayBg] = useState<"none" | "dark" | "light">("none");
-  // Overlay font, chosen by the customer for the text they add
-  // (headline, subheadline, brand name — all three share it, so
-  // the promo looks like one design, not three). Default is now
-  // Padauk (2026-11-02, user request: beautiful font on the AI
-  // image output) — designed for Burmese, elegant and readable —
-  // so a customer who never touches the Font select still gets
-  // a beautiful overlay, in preview and in the PNG download.
-  // The other stacks always end in a font that has Burmese
-  // glyphs, so Burmese text never falls back to a broken
-  // system font.
   const [overlayFont, setOverlayFont] = useState<"default" | "padauk" | "serif" | "playfair">("padauk");
-  // AI-text mode (2026-11-02, user request: let AI write the
-  // text in the image), default ON. OFF = Overlay mode: the
-  // browser draws the text with 100% correct Burmese.
   const [aiWritesText, setAiWritesText] = useState(true);
   const overlayFontStack =
     overlayFont === "padauk"
@@ -263,47 +191,54 @@ function CreatePageInner() {
         : overlayFont === "playfair"
           ? '"Playfair Display", "Noto Sans Myanmar", serif'
           : '"Noto Sans Myanmar", Inter, sans-serif';
-  // Separate drag-to-position (2026-11-01, user request: headline
-  // and subheadline as separate layers, one by one): each line has
-  // its own free position in % of the image, set by dragging that
-  // line in the preview. While set, it overrides the top/center/
-  // bottom select for that line only; changing that select (or
-  // the reset button) clears both again. Works with mouse and
-  // touch via Pointer Events. Until a line is dragged, both lines
-  // stay together in one block at the select position, as before.
   const [overlayCustomHead, setOverlayCustomHead] = useState<{ x: number; y: number } | null>(null);
   const [overlayCustomSub, setOverlayCustomSub] = useState<{ x: number; y: number } | null>(null);
-  // Business-name layer: the business name (e.g. "Yangon kitchen")
-  // is shown ON the final image as a separate browser-drawn layer,
-  // not by the AI. The AI must never draw text (it garbles Burmese
-  // and is unreliable even for English), so the name is drawn by
-  // the browser like the headline/subheadline — spelling 100%
-  // correct, draggable, and included in the with-text PNG only.
   const [showBrandName, setShowBrandName] = useState(true);
   const [overlayCustomBrand, setOverlayCustomBrand] = useState<{ x: number; y: number } | null>(null);
+
+  // Brand preset + Logo upload inside /create (Batch 3B):
+  // logo is drawn by the browser (never AI), preserving natural
+  // aspect ratio, draggable on preview, and composited on PNG export.
+  type BrandPreset = {
+    id: string;
+    name: string;
+    business_type: string | null;
+    logo_url?: string | null;
+  };
+  const [brandPresets, setBrandPresets] = useState<BrandPreset[]>(() => {
+    if (typeof window === "undefined" || getSupabase()) return [];
+    try {
+      return JSON.parse(localStorage.getItem("thukha-brands") ?? "[]") as BrandPreset[];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedBrandId, setSelectedBrandId] = useState("");
+  const [logoSrc, setLogoSrc] = useState("");
+  const [logoSize, setLogoSize] = useState<"small" | "medium" | "large">("medium");
+  const [overlayCustomLogo, setOverlayCustomLogo] = useState<{ x: number; y: number } | null>(null);
+  const [brandMessage, setBrandMessage] = useState("");
+  const [savingBrand, setSavingBrand] = useState(false);
+
   const previewRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     pointerId: number;
-    which: "head" | "sub" | "brand";
+    which: "head" | "sub" | "brand" | "logo";
     startX: number;
     startY: number;
     startPos: { x: number; y: number };
   } | null>(null);
 
-  function defaultCustomPos(which: "head" | "sub" | "brand"): { x: number; y: number } {
-    // Brand footer stays at the bottom regardless of the headline
-    // position (the headline defaults to the top, so they rarely
-    // overlap; if they do, the brand can be dragged away).
+  function defaultCustomPos(which: "head" | "sub" | "brand" | "logo"): { x: number; y: number } {
+    if (which === "logo") return { x: 16, y: 14 };
     const baseY = which === "brand" ? 92 : overlayPosition === "top" ? 15 : overlayPosition === "bottom" ? 85 : 50;
     return {
       x: overlayAlign === "left" ? 10 : overlayAlign === "right" ? 90 : 50,
-      // The subheadline sits just below the headline in the
-      // default combined block, so its drag start is a bit lower.
       y: which === "sub" ? Math.min(100, baseY + 12) : baseY,
     };
   }
 
-  function onOverlayPointerDown(which: "head" | "sub" | "brand") {
+  function onOverlayPointerDown(which: "head" | "sub" | "brand" | "logo") {
     return (e: ReactPointerEvent<HTMLDivElement>) => {
       const container = previewRef.current;
       if (!container) return;
@@ -314,7 +249,13 @@ function CreatePageInner() {
         startX: e.clientX,
         startY: e.clientY,
         startPos:
-          (which === "head" ? overlayCustomHead : which === "sub" ? overlayCustomSub : overlayCustomBrand) ?? defaultCustomPos(which),
+          (which === "head"
+            ? overlayCustomHead
+            : which === "sub"
+              ? overlayCustomSub
+              : which === "brand"
+                ? overlayCustomBrand
+                : overlayCustomLogo) ?? defaultCustomPos(which),
       };
     };
   }
@@ -332,6 +273,7 @@ function CreatePageInner() {
     };
     if (drag.which === "head") setOverlayCustomHead(pos);
     else if (drag.which === "sub") setOverlayCustomSub(pos);
+    else if (drag.which === "logo") setOverlayCustomLogo(pos);
     else setOverlayCustomBrand(pos);
   }
 
@@ -341,9 +283,6 @@ function CreatePageInner() {
   const [overlayMessage, setOverlayMessage] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [savingDesign, setSavingDesign] = useState(false);
-  // Caption + hashtags (Batch 1 launch feature): the template
-  // /api/generate-caption already existed but /create never called
-  // it. This is a template, not an AI model — the UI says so.
   const [captionOptions, setCaptionOptions] = useState<string[]>([]);
   const [captionHashtags, setCaptionHashtags] = useState<string[]>([]);
   const [captionLoading, setCaptionLoading] = useState(false);
@@ -356,17 +295,10 @@ function CreatePageInner() {
     format: channelInfo.format,
     referenceCount: referenceImages.length,
   });
-  // Admin unlimited: never blocked by a (browser or server) number.
   const effectiveTokens = isUnlimited ? Number.POSITIVE_INFINITY : (serverTokens ?? tokens);
-  // Guest = no Supabase session. Guests may generate and preview,
-  // but they must NOT download a clean image (see below).
   const isGuest = !authToken;
-  // Guest limit: 1 image only per browser. Logged-in customers
-  // and admins are never limited by this (isGuest is false).
   const guestUsedUp = isGuest && !isUnlimited && guestGenerations >= GUEST_MAX_GENERATIONS;
 
-  // Load the image provider once, so /create can warn about the
-  // Cloudflare reference-image limit before the user generates.
   useEffect(() => {
     fetch("/api/generate-background")
       .then((res) => res.json())
@@ -376,10 +308,6 @@ function CreatePageInner() {
       .catch(() => {});
   }, []);
 
-  // Batch 2 announcements: active broadcasts from the admin,
-  // shown at the top of /create. Dismiss is per page load only —
-  // the announcement returns on the next visit, so a customer
-  // cannot permanently hide a maintenance notice by accident.
   useEffect(() => {
     fetch("/api/announcements")
       .then((res) => res.json())
@@ -389,20 +317,6 @@ function CreatePageInner() {
       .catch(() => {});
   }, []);
 
-  // Load the server balance once a session exists; guests stay local.
-  // BUGFIX 2026-11-04 (account 300/400, create 0/100, twice):
-  // /api/me (for /account) and /api/tokens (for /create) both read
-  // the SAME token_balances row, so a fresh /create cannot show a
-  // different balance — unless /create never got a fresh server
-  // answer at all. The old code failed SILENTLY in that case:
-  // serverTokens stayed null, the pill fell back to the browser
-  // guest tokens (which can be 0), and the pill text still said
-  // "Server (login)" because that word is hardcoded in the render
-  // — it never proved the server fetch succeeded. So a 0/100 pill
-  // can mean "guest tokens, server fetch failed/stale", not "DB
-  // balance is 0". This fix makes that failure VISIBLE and
-  // retryable: a Refresh button next to the pill, and a warning
-  // when the server answers guest mode while logged in.
   const [tokenMsg, setTokenMsg] = useState("");
   const [tokenRefreshing, setTokenRefreshing] = useState(false);
   async function loadServerTokens() {
@@ -420,9 +334,6 @@ function CreatePageInner() {
       try {
         json = (await res.json()) as typeof json;
       } catch {
-        // Server answered non-JSON (e.g. a 500 HTML page) — that
-        // is a server crash, not a token problem. Show the status
-        // so Vercel Logs can be checked for /api/tokens.
         setTokenMsg(`${t("create.tokenRefreshFailed")} (HTTP ${res.status}, response not JSON)`);
         return;
       }
@@ -439,9 +350,6 @@ function CreatePageInner() {
         setIsSuspended((json as { suspended?: boolean }).suspended ?? false);
         setTokenMsg("");
       } else {
-        // Logged in, but the server did not return a server
-        // balance — do NOT silently show guest tokens as if they
-        // were the server balance. Show the server's reason.
         setTokenMsg(`${t("create.tokenGuestMode")} (${json.reason ?? "unknown"})`);
       }
     } catch {
@@ -472,6 +380,138 @@ function CreatePageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load saved brand presets (cloud when logged in, localStorage for guests).
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    supabase.auth.getSession().then(async ({ data }) => {
+      const token = data.session?.access_token;
+      if (!token) {
+        try {
+          setBrandPresets(JSON.parse(localStorage.getItem("thukha-brands") ?? "[]") as BrandPreset[]);
+        } catch {
+          setBrandPresets([]);
+        }
+        return;
+      }
+      try {
+        const res = await fetch("/api/brands", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json()) as { brands?: BrandPreset[] };
+        if (res.ok && Array.isArray(json.brands)) setBrandPresets(json.brands);
+      } catch {
+        // Brand presets are optional — /create still works without them.
+      }
+    });
+  }, []);
+
+  function selectBrandPreset(id: string) {
+    setSelectedBrandId(id);
+    setBrandMessage("");
+    const found = brandPresets.find((b) => b.id === id);
+    if (!found) return;
+    setBusinessName(found.name);
+    if (found.business_type && BUSINESS_TYPES.includes(found.business_type)) {
+      setBusinessType(found.business_type);
+    }
+    setLogoSrc(found.logo_url ?? "");
+  }
+
+  function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setBrandMessage(t("create.logoInvalidType"));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setBrandMessage(t("create.logoTooLarge"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogoSrc(String(reader.result ?? ""));
+      setBrandMessage("");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveBrandPreset() {
+    const trimmed = businessName.trim();
+    if (!trimmed) {
+      setBrandMessage(t("create.brandPresetNeedName"));
+      return;
+    }
+    setSavingBrand(true);
+    setBrandMessage("");
+    if (authToken) {
+      try {
+        const res = await fetch("/api/brands", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            name: trimmed,
+            businessType,
+            ...(logoSrc ? { logoDataUrl: logoSrc } : {}),
+          }),
+        });
+        const json = (await res.json()) as { brand?: BrandPreset; error?: string };
+        if (!res.ok || !json.brand) {
+          setBrandMessage(serverErrorText(lang, json.error) ?? t("create.brandPresetFailed"));
+        } else {
+          setBrandPresets((prev) => [json.brand!, ...prev]);
+          setSelectedBrandId(json.brand.id);
+          if (json.brand.logo_url) setLogoSrc(json.brand.logo_url);
+          setBrandMessage(t("create.brandPresetSaved"));
+        }
+      } catch {
+        setBrandMessage(t("create.brandPresetFailed"));
+      } finally {
+        setSavingBrand(false);
+      }
+      return;
+    }
+    try {
+      const preset: BrandPreset = {
+        id: `guest-brand-${Date.now()}`,
+        name: trimmed,
+        business_type: businessType,
+        logo_url: logoSrc || null,
+      };
+      const next = [preset, ...brandPresets].slice(0, 15);
+      localStorage.setItem("thukha-brands", JSON.stringify(next));
+      setBrandPresets(next);
+      setSelectedBrandId(preset.id);
+      setBrandMessage(t("create.brandPresetSaved"));
+    } catch {
+      setBrandMessage(t("create.brandPresetFailed"));
+    } finally {
+      setSavingBrand(false);
+    }
+  }
+
+  async function deleteBrandPreset() {
+    if (!selectedBrandId) return;
+    if (authToken) {
+      const res = await fetch(`/api/brands?id=${encodeURIComponent(selectedBrandId)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) {
+        setBrandMessage(t("create.brandPresetDeleteFailed"));
+        return;
+      }
+    } else {
+      const next = brandPresets.filter((b) => b.id !== selectedBrandId);
+      localStorage.setItem("thukha-brands", JSON.stringify(next));
+    }
+    setBrandPresets((prev) => prev.filter((b) => b.id !== selectedBrandId));
+    setSelectedBrandId("");
+    setBrandMessage(t("create.brandPresetDeleted"));
+  }
+
   function spendTokens(amount: number) {
     setTokens((prev) => {
       const next = Math.max(0, prev - amount);
@@ -480,9 +520,6 @@ function CreatePageInner() {
     });
   }
 
-  // Test-only refill: restores the starting guest tokens (50)
-  // in this browser. Remove this button before a real launch — a
-  // real top-up must go through payment/admin, not a free button.
   function refillTestTokens() {
     localStorage.setItem("thukha-tokens", String(GUEST_START_TOKENS));
     setTokens(GUEST_START_TOKENS);
@@ -490,9 +527,6 @@ function CreatePageInner() {
   }
 
   async function getPromptSuggestions() {
-    // Text-first: suggestions work from the text typed above
-    // (section 1 headline/subheadline) even if the prompt box
-    // is still empty — the API builds them from the overlay text.
     const overlayText = [overlayHeadline, overlaySub].map((t) => t.trim()).filter(Boolean).join(" — ");
     if (!aiPrompt.trim() && !overlayText) {
       setAiError(t("create.errNeedTextOrPrompt"));
@@ -511,9 +545,6 @@ function CreatePageInner() {
           businessName,
           goal,
           channel,
-          // Mode-aware suggestions: in AI-text mode they must
-          // not say "no text" (that would contradict the render
-          // instruction); in Overlay mode they must.
           renderText: aiWritesText,
         }),
       });
@@ -549,15 +580,10 @@ function CreatePageInner() {
       setAiError(t("create.errNeedPrompt"));
       return;
     }
-    // Guest limit first: after 1 guest image, only login helps —
-    // this error deliberately has no "Token" in it, so the token
-    // refill button (shown only for Token errors) never appears.
     if (guestUsedUp) {
       setAiError(t("create.errGuestLimit"));
       return;
     }
-    // Token check first: insufficient balance blocks generation, and
-    // a failed generation never deducts (deduct only on success).
     if (effectiveTokens < cost) {
       setAiError(isGuest ? t("create.errGuestLimit") : t("create.errTokenNotEnough", { cost, balance: effectiveTokens }));
       return;
@@ -577,9 +603,6 @@ function CreatePageInner() {
           goal,
           channel,
           referenceImages,
-          // AI-text mode: the text typed above is sent to be
-          // rendered in the image. Overlay mode: the server must
-          // NOT render it — it only guides scene mood.
           renderText: aiWritesText,
           overlayText: [overlayHeadline, overlaySub, showBrandName ? businessName : ""].map((t) => t.trim()).filter(Boolean).join(" — "),
           ...(authToken ? { authToken } : {}),
@@ -597,15 +620,11 @@ function CreatePageInner() {
         return;
       }
       if (data.unlimited) {
-        // Admin: nothing deducted, nothing to update.
         setIsUnlimited(true);
       } else if (typeof data.serverBalance === "number") {
         setServerTokens(data.serverBalance);
       } else {
         spendTokens(data.cost ?? cost);
-        // Guest only: this branch runs only without a server
-        // balance, so it is a guest success — count it toward the
-        // 1-image guest limit. Failures return above, uncounted.
         if (!authToken) {
           setGuestGenerations((prev) => {
             const next = prev + 1;
@@ -623,20 +642,13 @@ function CreatePageInner() {
     }
   }
 
-  // Download the selected image WITH the overlay text composited
-  // on top via canvas. The image is a data URL (Gemini/Cloudflare
-  // base64), so the canvas is never tainted by cross-origin data.
-  // Text is wrapped, centred, and drawn with a dark shadow so it
-  // stays readable on any background. Burmese is drawn by the
-  // browser's own text engine, so it cannot garble like AI text.
   function downloadWithText() {
     if (!selected) return;
     if (isGuest) {
       setOverlayMessage(t("create.errGuestDownload"));
       return;
     }
-    if (aiWritesText) {
-      // Text already drawn by the AI — download the image as-is.
+    if (aiWritesText && !logoSrc) {
       setOverlayMessage("");
       const a = document.createElement("a");
       a.href = selected;
@@ -644,7 +656,7 @@ function CreatePageInner() {
       a.click();
       return;
     }
-    if (!overlayHeadline.trim() && !overlaySub.trim() && !(showBrandName && businessName.trim())) {
+    if (!aiWritesText && !logoSrc && !overlayHeadline.trim() && !overlaySub.trim() && !(showBrandName && businessName.trim())) {
       setOverlayMessage(t("create.errNeedOverlayText"));
       return;
     }
@@ -662,135 +674,150 @@ function CreatePageInner() {
       const pad = w * 0.06;
       const maxWidth = w - pad * 2;
       const font = overlayFontStack;
-      // Size control: headline is 7% / 9% / 12% of image width,
-      // subheadline is always half the headline size.
-      const headlineSize = Math.round(
-        w * (overlaySize === "small" ? 0.07 : overlaySize === "large" ? 0.12 : 0.09),
-      );
-      const subSize = Math.round(headlineSize * 0.5);
-      // Per-line dragged position: the % point is the anchor —
-      // left edge for left align, centre for centre align, right
-      // edge for right align — matching the preview's translate.
-      const textXFor = (custom: { x: number; y: number } | null) =>
-        custom
-          ? (custom.x / 100) * w
-          : overlayAlign === "left"
-            ? pad
-            : overlayAlign === "right"
-              ? w - pad
-              : w / 2;
-      const drawLines = (text: string, fontSize: number, bold: boolean) => {
-        ctx.font = `${bold ? "bold" : "400"} ${fontSize}px ${font}`;
-        ctx.fillStyle = overlayColor;
-        ctx.textAlign = overlayAlign;
-        ctx.textBaseline = "alphabetic";
-        ctx.shadowColor = "rgba(0,0,0,0.75)";
-        ctx.shadowBlur = Math.max(4, fontSize * 0.12);
-        ctx.shadowOffsetY = Math.max(2, fontSize * 0.05);
-        const words = text.split(/\s+/).filter(Boolean);
-        const lines: string[] = [];
-        let line = "";
-        for (const word of words) {
-          const test = line ? `${line} ${word}` : word;
-          if (ctx.measureText(test).width > maxWidth && line) {
-            lines.push(line);
-            line = word;
-          } else {
-            line = test;
-          }
-        }
-        if (line) lines.push(line);
-        return lines;
-      };
-      // Load the beautiful font before measuring/drawing, so
-      // the PNG uses Padauk (or the customer's chosen font),
-      // not a silent sans fallback.
-      try {
-        await document.fonts.load(`bold ${headlineSize}px ${font}`);
-        await document.fonts.load(`400 ${subSize}px ${font}`);
-        await document.fonts.load(`bold ${Math.round(headlineSize * 0.6)}px ${font}`);
-      } catch {
-        // Font API unavailable: draw anyway with the fallback stack.
-      }
-      const headlineLines = overlayHeadline.trim()
-        ? drawLines(overlayHeadline.trim(), headlineSize, true)
-        : [];
-      const subLines = overlaySub.trim() ? drawLines(overlaySub.trim(), subSize, false) : [];
-      const brandSize = Math.round(headlineSize * 0.6);
-      const brandLines =
-        showBrandName && businessName.trim() ? drawLines(businessName.trim(), brandSize, true) : [];
-      const lineHeight = (size: number) => size * 1.25;
-      const headHeight = headlineLines.length * lineHeight(headlineSize);
-      const subHeight = subLines.length * lineHeight(subSize);
-      const brandHeight = brandLines.length * lineHeight(brandSize);
-      // Draw one line's block (its own bg rect + text) at a top.
-      const drawBlock = (
-        lines: string[],
-        fontSize: number,
-        bold: boolean,
-        blockTop: number,
-        custom: { x: number; y: number } | null,
-      ) => {
-        if (lines.length === 0) return;
-        const textX = textXFor(custom);
-        const height = lines.length * lineHeight(fontSize);
-        if (overlayBg !== "none") {
-          let blockWidth = 0;
-          ctx.font = `${bold ? "bold" : "400"} ${fontSize}px ${font}`;
-          for (const lineText of lines) blockWidth = Math.max(blockWidth, ctx.measureText(lineText).width);
-          const bgPad = Math.round(w * 0.03);
-          const bgX =
-            overlayAlign === "left"
-              ? textX - bgPad
+      if (!aiWritesText) {
+        const headlineSize = Math.round(
+          w * (overlaySize === "small" ? 0.07 : overlaySize === "large" ? 0.12 : 0.09),
+        );
+        const subSize = Math.round(headlineSize * 0.5);
+        const textXFor = (custom: { x: number; y: number } | null) =>
+          custom
+            ? (custom.x / 100) * w
+            : overlayAlign === "left"
+              ? pad
               : overlayAlign === "right"
-                ? textX - blockWidth - bgPad
-                : textX - blockWidth / 2 - bgPad;
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetY = 0;
-          ctx.fillStyle = overlayBg === "dark" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.65)";
-          ctx.fillRect(bgX, blockTop - bgPad / 2, blockWidth + bgPad * 2, height + bgPad);
-        }
-        let y = blockTop + fontSize;
-        for (const lineText of lines) {
+                ? w - pad
+                : w / 2;
+        const drawLines = (text: string, fontSize: number, bold: boolean) => {
           ctx.font = `${bold ? "bold" : "400"} ${fontSize}px ${font}`;
           ctx.fillStyle = overlayColor;
           ctx.textAlign = overlayAlign;
+          ctx.textBaseline = "alphabetic";
           ctx.shadowColor = "rgba(0,0,0,0.75)";
           ctx.shadowBlur = Math.max(4, fontSize * 0.12);
           ctx.shadowOffsetY = Math.max(2, fontSize * 0.05);
-          ctx.fillText(lineText, textX, y);
-          y += lineHeight(fontSize);
+          const words = text.split(/\s+/).filter(Boolean);
+          const lines: string[] = [];
+          let line = "";
+          for (const word of words) {
+            const test = line ? `${line} ${word}` : word;
+            if (ctx.measureText(test).width > maxWidth && line) {
+              lines.push(line);
+              line = word;
+            } else {
+              line = test;
+            }
+          }
+          if (line) lines.push(line);
+          return lines;
+        };
+        try {
+          await document.fonts.load(`bold ${headlineSize}px ${font}`);
+          await document.fonts.load(`400 ${subSize}px ${font}`);
+          await document.fonts.load(`bold ${Math.round(headlineSize * 0.6)}px ${font}`);
+        } catch {
+          // Font API unavailable: draw anyway with the fallback stack.
         }
-      };
-      // Separate positions (preview and download use the same
-      // model): each line is centred vertically on its own anchor.
-      // Default anchors: the two lines straddle the select
-      // position (top 15% / centre 50% / bottom 85%), offset by
-      // size; a single line sits exactly on the select position.
-      // A dragged line uses its own % anchor instead.
-      const centerPct =
-        overlayPosition === "top" ? 0.15 : overlayPosition === "bottom" ? 0.85 : 0.5;
-      const offsetPct =
-        headlineLines.length > 0 && subLines.length > 0
-          ? overlaySize === "small"
-            ? 0.08
-            : overlaySize === "large"
-              ? 0.16
-              : 0.11
-          : 0;
-      const headTop = overlayCustomHead
-        ? (overlayCustomHead.y / 100) * h - headHeight / 2
-        : (centerPct - offsetPct / 2) * h - headHeight / 2;
-      const subTop = overlayCustomSub
-        ? (overlayCustomSub.y / 100) * h - subHeight / 2
-        : (centerPct + offsetPct / 2) * h - subHeight / 2;
-      drawBlock(headlineLines, headlineSize, true, headTop, overlayCustomHead);
-      drawBlock(subLines, subSize, false, subTop, overlayCustomSub);
-      const brandTop = overlayCustomBrand
-        ? (overlayCustomBrand.y / 100) * h - brandHeight / 2
-        : 0.92 * h - brandHeight / 2;
-      drawBlock(brandLines, brandSize, true, brandTop, overlayCustomBrand);
+        const headlineLines = overlayHeadline.trim()
+          ? drawLines(overlayHeadline.trim(), headlineSize, true)
+          : [];
+        const subLines = overlaySub.trim() ? drawLines(overlaySub.trim(), subSize, false) : [];
+        const brandSize = Math.round(headlineSize * 0.6);
+        const brandLines =
+          showBrandName && businessName.trim() ? drawLines(businessName.trim(), brandSize, true) : [];
+        const lineHeight = (size: number) => size * 1.25;
+        const headHeight = headlineLines.length * lineHeight(headlineSize);
+        const subHeight = subLines.length * lineHeight(subSize);
+        const brandHeight = brandLines.length * lineHeight(brandSize);
+        const drawBlock = (
+          lines: string[],
+          fontSize: number,
+          bold: boolean,
+          blockTop: number,
+          custom: { x: number; y: number } | null,
+        ) => {
+          if (lines.length === 0) return;
+          const textX = textXFor(custom);
+          const height = lines.length * lineHeight(fontSize);
+          if (overlayBg !== "none") {
+            let blockWidth = 0;
+            ctx.font = `${bold ? "bold" : "400"} ${fontSize}px ${font}`;
+            for (const lineText of lines) blockWidth = Math.max(blockWidth, ctx.measureText(lineText).width);
+            const bgPad = Math.round(w * 0.03);
+            const bgX =
+              overlayAlign === "left"
+                ? textX - bgPad
+                : overlayAlign === "right"
+                  ? textX - blockWidth - bgPad
+                  : textX - blockWidth / 2 - bgPad;
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fillStyle = overlayBg === "dark" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.65)";
+            ctx.fillRect(bgX, blockTop - bgPad / 2, blockWidth + bgPad * 2, height + bgPad);
+          }
+          let y = blockTop + fontSize;
+          for (const lineText of lines) {
+            ctx.font = `${bold ? "bold" : "400"} ${fontSize}px ${font}`;
+            ctx.fillStyle = overlayColor;
+            ctx.textAlign = overlayAlign;
+            ctx.shadowColor = "rgba(0,0,0,0.75)";
+            ctx.shadowBlur = Math.max(4, fontSize * 0.12);
+            ctx.shadowOffsetY = Math.max(2, fontSize * 0.05);
+            ctx.fillText(lineText, textX, y);
+            y += lineHeight(fontSize);
+          }
+        };
+        const centerPct =
+          overlayPosition === "top" ? 0.15 : overlayPosition === "bottom" ? 0.85 : 0.5;
+        const offsetPct =
+          headlineLines.length > 0 && subLines.length > 0
+            ? overlaySize === "small"
+              ? 0.08
+              : overlaySize === "large"
+                ? 0.16
+                : 0.11
+            : 0;
+        const headTop = overlayCustomHead
+          ? (overlayCustomHead.y / 100) * h - headHeight / 2
+          : (centerPct - offsetPct / 2) * h - headHeight / 2;
+        const subTop = overlayCustomSub
+          ? (overlayCustomSub.y / 100) * h - subHeight / 2
+          : (centerPct + offsetPct / 2) * h - subHeight / 2;
+        drawBlock(headlineLines, headlineSize, true, headTop, overlayCustomHead);
+        drawBlock(subLines, subSize, false, subTop, overlayCustomSub);
+        const brandTop = overlayCustomBrand
+          ? (overlayCustomBrand.y / 100) * h - brandHeight / 2
+          : 0.92 * h - brandHeight / 2;
+        drawBlock(brandLines, brandSize, true, brandTop, overlayCustomBrand);
+      }
+
+      // Composite the business logo (preserving natural aspect ratio, never stretched).
+      if (logoSrc) {
+        try {
+          const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new Image();
+            if (logoSrc.startsWith("http")) el.crossOrigin = "anonymous";
+            el.onload = () => resolve(el);
+            el.onerror = () => reject(new Error("logo load failed"));
+            el.src = logoSrc;
+          });
+          const ratio = logoSize === "small" ? 0.11 : logoSize === "large" ? 0.22 : 0.16;
+          const logoW = Math.round(w * ratio);
+          const logoH = logoImg.naturalWidth > 0
+            ? Math.round(logoW * (logoImg.naturalHeight / logoImg.naturalWidth))
+            : logoW;
+          const anchor = overlayCustomLogo ?? defaultCustomPos("logo");
+          const cx = (anchor.x / 100) * w;
+          const cy = (anchor.y / 100) * h;
+          ctx.shadowColor = "rgba(0,0,0,0.35)";
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 2;
+          ctx.drawImage(logoImg, cx - logoW / 2, cy - logoH / 2, logoW, logoH);
+        } catch {
+          // Continue exporting even if an external logo fails to load.
+        }
+      }
+
       canvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
@@ -950,13 +977,39 @@ function CreatePageInner() {
         </div>
       </header>
 
-      {/* Side preview (2026-11-01, user request: preview beside, not
-          below, and always visible): desktop = form left + sticky
-          preview right; mobile = single column, preview after form. */}
       <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_420px]">
         <div className="flex flex-col gap-6">
       <section className={sectionClass}>
         <h2 className="text-lg font-bold">{t("create.business")}</h2>
+        {/* Brand Preset bar inside /create (no separate /brands page) */}
+        <div className="flex flex-col gap-2 rounded-2xl border border-thukha-lilac/30 bg-thukha-lilac/10 p-3.5 dark:border-white/10 dark:bg-white/5">
+          <label className={labelClass}>
+            {t("create.brandPresetLabel")}
+            <div className="mt-1 flex flex-wrap gap-2">
+              <select
+                value={selectedBrandId}
+                onChange={(e) => selectBrandPreset(e.target.value)}
+                className={`${inputClass} min-w-0 flex-1`}
+              >
+                <option value="">{t("create.brandPresetNone")}</option>
+                {brandPresets.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}{b.business_type ? ` (${b.business_type})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedBrandId && (
+                <button
+                  type="button"
+                  onClick={deleteBrandPreset}
+                  className="min-h-[44px] rounded-xl bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white dark:bg-rose-950/60 dark:text-rose-300"
+                >
+                  {t("common.delete")}
+                </button>
+              )}
+            </div>
+          </label>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className={labelClass}>
             {t("create.businessType")}
@@ -986,6 +1039,58 @@ function CreatePageInner() {
             <span className="block text-thukha-indigo/70 dark:text-white/70">{t("create.showBrandHelp")}</span>
           </span>
         </label>
+        {/* Business Logo Upload (browser-composited, never redrawn by AI) */}
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>
+            {t("create.logoLabel")}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleLogoUpload}
+              className={`${inputClass} mt-1`}
+            />
+          </label>
+          {logoSrc && (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-thukha-lilac/30 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoSrc} alt="Logo" className="h-12 w-12 rounded-xl object-contain bg-white/80 p-1 shadow-sm" />
+              <label className="text-xs font-bold text-thukha-indigo dark:text-[#f6f7fb]">
+                {t("create.logoSizeLabel")}
+                <select
+                  value={logoSize}
+                  onChange={(e) => setLogoSize(e.target.value as "small" | "medium" | "large")}
+                  className="ml-2 rounded-lg border border-thukha-lilac/40 bg-white px-2.5 py-1.5 text-xs font-bold dark:bg-[#1b1c48]"
+                >
+                  <option value="small">{t("create.sizeSmall")}</option>
+                  <option value="medium">{t("create.sizeMedium")}</option>
+                  <option value="large">{t("create.sizeLarge")}</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setLogoSrc("");
+                  setOverlayCustomLogo(null);
+                }}
+                className="ml-auto min-h-[36px] rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white dark:bg-rose-950/60 dark:text-rose-300"
+              >
+                {t("create.logoRemove")}
+              </button>
+            </div>
+          )}
+          <p className="text-xs leading-5 text-thukha-indigo/65 dark:text-white/65">{t("create.logoHelp")}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={saveBrandPreset}
+            disabled={savingBrand}
+            className="min-h-[42px] w-fit rounded-full border-2 border-thukha-violet px-5 py-2 text-xs font-bold text-thukha-violet transition-colors hover:bg-thukha-violet hover:text-white disabled:opacity-50 dark:text-thukha-lilac"
+          >
+            {savingBrand ? t("create.savingDesign") : t("create.brandPresetSave")}
+          </button>
+          {brandMessage && <span className="text-xs font-semibold text-thukha-indigo dark:text-white">{brandMessage}</span>}
+        </div>
         <label className={labelClass}>
           {t("create.channel")}
           <select value={channel} onChange={(e) => setChannel(e.target.value)} className={`${inputClass} mt-1`}>
@@ -996,10 +1101,6 @@ function CreatePageInner() {
         </label>
       </section>
 
-      {/* Text-first flow (2026-11-01): the customer types the text
-          BEFORE generating — no image needed first. This text is
-          sent to the API only as scene mood, and after generation
-          it is overlaid on the image automatically. */}
       <section className={sectionClass}>
         <h2 className="text-lg font-bold">{t("create.section1")}</h2>
         <p className="text-sm leading-6 text-thukha-indigo/70 dark:text-white/70">
@@ -1149,9 +1250,6 @@ function CreatePageInner() {
           {t("create.promptLabel")}
           <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} placeholder={t("create.promptPlaceholder")} className={`${inputClass} mt-1`} />
         </label>
-        {/* Hidden entirely when the selected type has no examples
-            (e.g. ဝန်ဆောင်မှု after its cleaning/delivery examples
-            were removed 2026-11-01) — no empty heading is shown. */}
         {PROMPT_EXAMPLES.filter((ex) => ex.type === businessType).length > 0 && (
           <div className="flex flex-col gap-2">
             <p className="text-sm font-bold text-thukha-indigo dark:text-[#f6f7fb]">
@@ -1306,16 +1404,36 @@ function CreatePageInner() {
                 : t("create.previewPlaceholderNoImage")}
             </div>
           )}
-              {/* AI-text mode: hide browser layers once an AI image
-                  exists (text already in it); before generation
-                  and in Overlay mode, layers show as before. */}
+          {/* Draggable Business Logo layer (always browser-drawn, never AI) */}
+          {logoSrc && (() => {
+            const pos = overlayCustomLogo ?? defaultCustomPos("logo");
+            const widthClass = logoSize === "small" ? "w-12 sm:w-14" : logoSize === "large" ? "w-24 sm:w-28" : "w-16 sm:w-20";
+            return (
+              <div
+                onPointerDown={onOverlayPointerDown("logo")}
+                onPointerMove={onOverlayPointerMove}
+                onPointerUp={onOverlayPointerUp}
+                onPointerCancel={onOverlayPointerUp}
+                className="absolute z-10 cursor-grab active:cursor-grabbing"
+                style={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  touchAction: "none",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoSrc}
+                  alt="Brand Logo"
+                  draggable={false}
+                  className={`${widthClass} h-auto rounded-lg object-contain drop-shadow-md`}
+                />
+              </div>
+            );
+          })()}
               {(!aiWritesText || !selected) && (
               <>
-              {/* Separate layers: headline and subheadline are two
-                  independent draggable elements, one by one. Each
-                  uses the same anchor model as the canvas download:
-                  default anchors straddle the select position, a
-                  dragged line uses its own % anchor instead. */}
               {(() => {
                 const centerPct = overlayPosition === "top" ? 15 : overlayPosition === "bottom" ? 85 : 50;
                 const offsetPct =
@@ -1345,8 +1463,6 @@ function CreatePageInner() {
                     onPointerUp={onOverlayPointerUp}
                     onPointerCancel={onOverlayPointerUp}
                     onDoubleClick={() => {
-                      // Edit from the preview itself (free, no token):
-                      // jump to the matching section-1 input and focus it.
                       const el = document.getElementById(
                         which === "head" ? "overlay-headline-input" : which === "sub" ? "overlay-sub-input" : "business-name-input",
                       );
@@ -1439,13 +1555,14 @@ function CreatePageInner() {
             {t("create.dragHelp")}
           </p>
         )}
-        {!selected && (overlayCustomHead || overlayCustomSub) && (
+        {!selected && (overlayCustomHead || overlayCustomSub || overlayCustomBrand || overlayCustomLogo) && (
           <button
             type="button"
             onClick={() => {
               setOverlayCustomHead(null);
               setOverlayCustomSub(null);
               setOverlayCustomBrand(null);
+              setOverlayCustomLogo(null);
             }}
             className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
           >
@@ -1459,12 +1576,14 @@ function CreatePageInner() {
                 {t("create.layersHelp")}
               </p>
             )}
-            {(overlayCustomHead || overlayCustomSub) && (
+            {(overlayCustomHead || overlayCustomSub || overlayCustomBrand || overlayCustomLogo) && (
               <button
                 type="button"
                 onClick={() => {
                   setOverlayCustomHead(null);
                   setOverlayCustomSub(null);
+                  setOverlayCustomBrand(null);
+                  setOverlayCustomLogo(null);
                 }}
                 className="min-h-[44px] w-fit rounded-full border-2 border-thukha-violet px-6 py-2 text-sm font-bold text-thukha-violet dark:text-thukha-lilac"
               >
@@ -1497,7 +1616,6 @@ function CreatePageInner() {
               {savingDesign ? t("create.savingDesign") : t("create.saveDesign")}
             </button>
             {savedMessage && <p className="text-sm leading-6 text-thukha-indigo dark:text-[#f6f7fb]">{savedMessage}</p>}
-            {/* Caption + hashtags for the Facebook post */}
             <div className="rounded-2xl border border-thukha-lilac/30 bg-white/40 p-4 dark:border-white/10 dark:bg-white/5">
               <h3 className="text-sm font-bold">{t("create.captionTitle")}</h3>
               <button
